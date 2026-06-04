@@ -1,0 +1,795 @@
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronDown,
+  ChevronRight,
+  Search,
+  SlidersHorizontal,
+  X
+} from "lucide-react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type TouchEvent as ReactTouchEvent,
+  type UIEvent,
+  type WheelEvent as ReactWheelEvent
+} from "react";
+import { menuCategories, menuItems, regionFilters, type MenuItem } from "./menuData";
+
+const defaultCategoryId = "single-malt-scotch";
+const initialVisibleCount = 8;
+const visibleStep = 6;
+const desktopPageSize = 6;
+
+const priceFilters = [
+  { id: "all", label: "Any price" },
+  { id: "under-15", label: "Under $15" },
+  { id: "15-25", label: "$15 - $25" },
+  { id: "25-plus", label: "$25+" }
+] as const;
+
+type PriceFilterId = (typeof priceFilters)[number]["id"];
+
+export function MenuPage() {
+  const [categoryId, setCategoryId] = useState(defaultCategoryId);
+  const [query, setQuery] = useState("");
+  const [selectedRegion, setSelectedRegion] = useState("All");
+  const [priceFilter, setPriceFilter] = useState<PriceFilterId>("all");
+  const [visibleCount, setVisibleCount] = useState(initialVisibleCount);
+  const [desktopPage, setDesktopPage] = useState(0);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [mobileLocked, setMobileLocked] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const selectedPourRef = useRef<HTMLDivElement>(null);
+  const lockScrollYRef = useRef(0);
+  const touchStartYRef = useRef(0);
+
+  const activeCategory =
+    menuCategories.find((category) => category.id === categoryId) ?? menuCategories[0];
+  const itemCountsByCategory = getCategoryCounts();
+  const categoryItems = menuItems.filter((item) => item.categoryId === activeCategory.id);
+
+  const availableRegions = [
+    "All",
+    ...regionFilters.filter((region) =>
+      categoryItems.some((item) => item.region === region)
+    )
+  ];
+
+  const filteredItems = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    return categoryItems.filter((item) => {
+      const matchesQuery =
+        !normalizedQuery ||
+        [item.name, item.region, item.note]
+          .filter(Boolean)
+          .some((value) => value!.toLowerCase().includes(normalizedQuery));
+      const matchesRegion = selectedRegion === "All" || item.region === selectedRegion;
+      const matchesPrice = matchesPriceFilter(item, priceFilter);
+
+      return matchesQuery && matchesRegion && matchesPrice;
+    });
+  }, [categoryItems, priceFilter, query, selectedRegion]);
+
+  const desktopTotalPages = Math.max(
+    1,
+    Math.ceil(filteredItems.length / desktopPageSize)
+  );
+  const desktopPageIndex = Math.min(desktopPage, desktopTotalPages - 1);
+  const desktopPageStart = desktopPageIndex * desktopPageSize;
+  const desktopPageItems = filteredItems.slice(
+    desktopPageStart,
+    desktopPageStart + desktopPageSize
+  );
+  const mobileVisibleItems = filteredItems.slice(0, visibleCount);
+  const visibleItems = isDesktop ? desktopPageItems : mobileVisibleItems;
+  const selectedItem =
+    filteredItems.find((item) => item.id === selectedItemId) ??
+    (isDesktop ? desktopPageItems[0] : filteredItems[0]);
+
+  const hasMore = visibleCount < filteredItems.length;
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 1024px)");
+
+    function handleMediaChange() {
+      setIsDesktop(mediaQuery.matches);
+      if (mediaQuery.matches) {
+        setMobileLocked(false);
+      }
+    }
+
+    handleMediaChange();
+    mediaQuery.addEventListener("change", handleMediaChange);
+
+    return () => {
+      mediaQuery.removeEventListener("change", handleMediaChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    setVisibleCount(initialVisibleCount);
+    setDesktopPage(0);
+    setSelectedItemId(null);
+    setMobileLocked(false);
+    if (resultsRef.current) {
+      resultsRef.current.scrollTop = 0;
+    }
+  }, [categoryId, priceFilter, query, selectedRegion]);
+
+  useEffect(() => {
+    const bodyOverflow = document.body.style.overflow;
+    const htmlOverflow = document.documentElement.style.overflow;
+
+    if (mobileLocked) {
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.body.style.overflow = bodyOverflow;
+      document.documentElement.style.overflow = htmlOverflow;
+    };
+  }, [mobileLocked]);
+
+  useEffect(() => {
+    function handleWindowScroll() {
+      if (window.innerWidth >= 1024 || mobileLocked || !selectedPourRef.current) {
+        return;
+      }
+
+      const headerOffset = 72;
+      const selectedTop = selectedPourRef.current.getBoundingClientRect().top;
+
+      if (selectedTop <= headerOffset) {
+        const lockScrollY =
+          window.scrollY + selectedTop - headerOffset;
+        lockScrollYRef.current = Math.max(0, lockScrollY);
+        window.scrollTo({ top: lockScrollYRef.current });
+        setMobileLocked(true);
+      }
+    }
+
+    function handleResize() {
+      if (window.innerWidth >= 1024) {
+        setMobileLocked(false);
+      }
+    }
+
+    window.addEventListener("scroll", handleWindowScroll, { passive: true });
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("scroll", handleWindowScroll);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [mobileLocked]);
+
+  function handleResultsScroll(event: UIEvent<HTMLDivElement>) {
+    if (isDesktop) {
+      return;
+    }
+
+    const target = event.currentTarget;
+    const distanceFromBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
+
+    if (distanceFromBottom < 180 && visibleCount < filteredItems.length) {
+      setVisibleCount((count) =>
+        Math.min(count + visibleStep, filteredItems.length)
+      );
+    }
+  }
+
+  function unlockPageScroll() {
+    setMobileLocked(false);
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: Math.max(0, lockScrollYRef.current - 2) });
+    });
+  }
+
+  function handleResultsWheel(event: ReactWheelEvent<HTMLDivElement>) {
+    if (!mobileLocked || event.deltaY >= 0 || event.currentTarget.scrollTop > 0) {
+      return;
+    }
+
+    unlockPageScroll();
+  }
+
+  function handleResultsTouchStart(event: ReactTouchEvent<HTMLDivElement>) {
+    touchStartYRef.current = event.touches[0]?.clientY ?? 0;
+  }
+
+  function handleResultsTouchMove(event: ReactTouchEvent<HTMLDivElement>) {
+    const touchY = event.touches[0]?.clientY ?? 0;
+    const isPullingDown = touchY - touchStartYRef.current > 18;
+
+    if (mobileLocked && isPullingDown && event.currentTarget.scrollTop <= 0) {
+      unlockPageScroll();
+    }
+  }
+
+  function handleCategoryChange(nextCategoryId: string) {
+    setCategoryId(nextCategoryId);
+    setQuery("");
+    setSelectedRegion("All");
+    setPriceFilter("all");
+  }
+
+  function handleDesktopPageChange(nextPage: number) {
+    const boundedPage = Math.max(0, Math.min(nextPage, desktopTotalPages - 1));
+    const firstItemOnPage = filteredItems[boundedPage * desktopPageSize];
+
+    setDesktopPage(boundedPage);
+    setSelectedItemId(firstItemOnPage?.id ?? null);
+
+    if (resultsRef.current) {
+      resultsRef.current.scrollTop = 0;
+    }
+  }
+
+  return (
+    <div className="min-h-screen overflow-x-hidden bg-watsons-dark text-watsons-cream selection:bg-watsons-gold selection:text-watsons-dark lg:h-screen lg:overflow-hidden">
+      <Header />
+
+      <main className="mx-auto min-w-0 w-full max-w-[92rem] px-5 pb-10 pt-3 sm:px-8 lg:flex lg:h-[calc(100dvh-5rem)] lg:flex-col lg:overflow-hidden lg:pb-5 lg:pt-5">
+        <Hero />
+
+        <section className="flex min-w-0 flex-col gap-3 lg:mt-4 lg:min-h-0 lg:flex-1">
+          <div className="min-w-0">
+            <FilterPanel
+              activeCategoryId={categoryId}
+              availableRegions={availableRegions}
+              itemCountsByCategory={itemCountsByCategory}
+              priceFilter={priceFilter}
+              query={query}
+              selectedRegion={selectedRegion}
+              onCategoryChange={handleCategoryChange}
+              onPriceFilterChange={setPriceFilter}
+              onQueryChange={setQuery}
+              onRegionChange={setSelectedRegion}
+            />
+          </div>
+
+          <div ref={selectedPourRef} className="mt-2 lg:hidden">
+            <SelectedPour item={selectedItem} />
+          </div>
+
+          <div className="grid min-w-0 gap-5 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_23rem]">
+            <section
+              className={`mt-2 flex flex-col overflow-hidden rounded-lg border border-watsons-cream/10 bg-[#0f100e] shadow-[0_18px_60px_rgba(0,0,0,0.2)] lg:mt-0 ${
+                mobileLocked ? "h-[calc(100dvh-25rem)] min-h-72" : "max-h-[42rem]"
+              } lg:h-full lg:min-h-0 lg:max-h-none`}
+            >
+              <div className="flex shrink-0 flex-col gap-1 border-b border-watsons-cream/10 p-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4 sm:p-5 lg:px-5 lg:py-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-watsons-gold sm:text-xs sm:tracking-[0.3em]">
+                    {activeCategory.eyebrow}
+                  </p>
+                  <h2 className="mt-1 font-serif text-xl leading-none text-watsons-cream sm:text-4xl lg:text-3xl">
+                    {activeCategory.label}
+                  </h2>
+                </div>
+                <p className="hidden max-w-xl text-sm leading-7 text-watsons-cream/58 xl:block">
+                  {activeCategory.description}
+                </p>
+              </div>
+
+              <div className="flex shrink-0 items-center justify-between gap-4 border-b border-watsons-cream/10 px-3 py-2 sm:px-5 sm:py-3 lg:px-5 lg:py-2">
+                <ResultsCount
+                  desktopPageIndex={desktopPageIndex}
+                  desktopPageStart={desktopPageStart}
+                  desktopPageSize={desktopPageSize}
+                  filteredCount={filteredItems.length}
+                  isDesktop={isDesktop}
+                  visibleCount={visibleCount}
+                />
+                {hasActiveFilters(query, selectedRegion, priceFilter) ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuery("");
+                      setSelectedRegion("All");
+                      setPriceFilter("all");
+                    }}
+                    className="text-xs font-bold uppercase tracking-[0.18em] text-watsons-cream/45 transition hover:text-watsons-gold"
+                  >
+                    Clear filters
+                  </button>
+                ) : null}
+              </div>
+
+              {visibleItems.length > 0 ? (
+                <div
+                  ref={resultsRef}
+                  data-results-scroll
+                  onScroll={handleResultsScroll}
+                  onWheel={handleResultsWheel}
+                  onTouchStart={handleResultsTouchStart}
+                  onTouchMove={handleResultsTouchMove}
+                  className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 pr-2 [scrollbar-gutter:stable] sm:p-5 sm:pr-4 lg:p-4 lg:pr-3"
+                >
+                  <div className="grid gap-3 xl:grid-cols-2">
+                    {visibleItems.map((item) => (
+                      <MenuCard
+                        key={item.id}
+                        item={item}
+                        isSelected={selectedItem?.id === item.id}
+                        onSelect={() => setSelectedItemId(item.id)}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="py-5 text-center text-xs font-bold uppercase tracking-[0.18em] text-watsons-cream/35 lg:hidden">
+                    {hasMore ? "Scroll for more pours" : "All matching pours shown"}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 sm:p-5">
+                  <EmptyState />
+                </div>
+              )}
+
+              <DesktopPagination
+                currentPage={desktopPageIndex}
+                totalItems={filteredItems.length}
+                totalPages={desktopTotalPages}
+                onPageChange={handleDesktopPageChange}
+              />
+            </section>
+
+            <div className="hidden min-h-0 lg:sticky lg:top-24 lg:block">
+              <SelectedPour item={selectedItem} />
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+type ResultsCountProps = {
+  desktopPageIndex: number;
+  desktopPageStart: number;
+  desktopPageSize: number;
+  filteredCount: number;
+  isDesktop: boolean;
+  visibleCount: number;
+};
+
+function ResultsCount({
+  desktopPageIndex,
+  desktopPageStart,
+  desktopPageSize,
+  filteredCount,
+  isDesktop,
+  visibleCount
+}: ResultsCountProps) {
+  if (filteredCount === 0) {
+    return (
+      <p className="text-xs text-watsons-cream/55 sm:text-sm">
+        Showing <span className="font-bold text-watsons-gold">0</span> pours
+      </p>
+    );
+  }
+
+  if (isDesktop) {
+    const pageEnd = Math.min(desktopPageStart + desktopPageSize, filteredCount);
+
+    return (
+      <p className="text-xs text-watsons-cream/55 sm:text-sm">
+        Showing{" "}
+        <span className="font-bold text-watsons-gold">
+          {desktopPageStart + 1}-{pageEnd}
+        </span>{" "}
+        of <span className="font-bold text-watsons-gold">{filteredCount}</span>
+        <span className="ml-3 hidden text-watsons-cream/35 xl:inline">
+          Page {desktopPageIndex + 1}
+        </span>
+      </p>
+    );
+  }
+
+  return (
+    <p className="text-xs text-watsons-cream/55 sm:text-sm">
+      Showing{" "}
+      <span className="font-bold text-watsons-gold">
+        {Math.min(visibleCount, filteredCount)}
+      </span>{" "}
+      of <span className="font-bold text-watsons-gold">{filteredCount}</span>
+    </p>
+  );
+}
+
+type DesktopPaginationProps = {
+  currentPage: number;
+  totalItems: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+};
+
+function DesktopPagination({
+  currentPage,
+  totalItems,
+  totalPages,
+  onPageChange
+}: DesktopPaginationProps) {
+  if (totalItems === 0) {
+    return null;
+  }
+
+  return (
+    <div className="hidden shrink-0 items-center justify-between gap-4 border-t border-watsons-cream/10 px-5 py-3 lg:flex">
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-watsons-cream/42">
+        Page <span className="text-watsons-gold">{currentPage + 1}</span> of{" "}
+        <span className="text-watsons-gold">{totalPages}</span>
+      </p>
+
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 0}
+          className="inline-flex h-9 items-center gap-2 rounded-full border border-watsons-cream/14 px-4 text-xs font-bold uppercase tracking-[0.16em] text-watsons-cream/72 transition hover:border-watsons-gold hover:text-watsons-gold disabled:cursor-not-allowed disabled:border-watsons-cream/8 disabled:text-watsons-cream/25"
+        >
+          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+          Prev
+        </button>
+        <button
+          type="button"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage >= totalPages - 1}
+          className="inline-flex h-9 items-center gap-2 rounded-full border border-watsons-gold bg-watsons-gold px-4 text-xs font-bold uppercase tracking-[0.16em] text-watsons-dark transition hover:bg-watsons-cream disabled:cursor-not-allowed disabled:border-watsons-cream/8 disabled:bg-transparent disabled:text-watsons-cream/25"
+        >
+          Next
+          <ChevronRight className="h-4 w-4" aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Header() {
+  return (
+    <header className="sticky top-0 z-30 border-b border-watsons-cream/10 bg-black/88 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-[92rem] items-center justify-between px-5 py-5 sm:px-8">
+        <a
+          href="/"
+          className="inline-flex items-center gap-3 text-xs font-bold uppercase tracking-[0.22em] text-watsons-cream/65 transition hover:text-watsons-gold"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Home
+        </a>
+        <a
+          href="/"
+          className="font-serif text-2xl uppercase tracking-[0.28em] text-watsons-cream sm:text-3xl"
+        >
+          Watson's
+        </a>
+      </div>
+    </header>
+  );
+}
+
+function Hero() {
+  return (
+    <section className="hidden gap-5 border-b border-watsons-cream/10 pb-3 lg:grid lg:grid-cols-[0.72fr_1fr] lg:items-end">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.34em] text-watsons-gold">
+          Menu
+        </p>
+        <h1 className="mt-2 max-w-2xl font-serif text-4xl leading-[0.94] text-watsons-cream">
+          Choose the mood, then the bottle.
+        </h1>
+      </div>
+      <p className="max-w-xl text-sm leading-7 text-watsons-cream/68">
+        Search the back bar, narrow by region or price, and tap any pour to hold
+        it in focus while you keep browsing.
+      </p>
+    </section>
+  );
+}
+
+type FilterPanelProps = {
+  activeCategoryId: string;
+  availableRegions: string[];
+  itemCountsByCategory: Map<string, number>;
+  priceFilter: PriceFilterId;
+  query: string;
+  selectedRegion: string;
+  onCategoryChange: (categoryId: string) => void;
+  onPriceFilterChange: (priceFilter: PriceFilterId) => void;
+  onQueryChange: (query: string) => void;
+  onRegionChange: (region: string) => void;
+};
+
+function FilterPanel({
+  activeCategoryId,
+  availableRegions,
+  itemCountsByCategory,
+  priceFilter,
+  query,
+  selectedRegion,
+  onCategoryChange,
+  onPriceFilterChange,
+  onQueryChange,
+  onRegionChange
+}: FilterPanelProps) {
+  return (
+    <section className="min-w-0 rounded-lg border border-watsons-cream/10 bg-[#10110f] p-3 shadow-[0_18px_60px_rgba(0,0,0,0.28)] sm:p-5 lg:p-3">
+      <div className="grid min-w-0 gap-2 lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-4">
+        <label className="block min-w-0">
+          <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.24em] text-watsons-cream/45 sm:mb-2 sm:text-[11px]">
+            Category
+          </span>
+          <span className="relative block">
+            <select
+              value={activeCategoryId}
+              onChange={(event) => onCategoryChange(event.target.value)}
+              className="h-10 w-full appearance-none rounded-lg border border-watsons-gold bg-watsons-card px-4 pr-10 text-sm font-bold text-watsons-cream outline-none transition focus:ring-2 focus:ring-watsons-gold/25 sm:h-12"
+            >
+              {menuCategories.map((category) => (
+                <option
+                  key={category.id}
+                  value={category.id}
+                  disabled={!itemCountsByCategory.has(category.id)}
+                >
+                  {category.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-watsons-gold"
+              aria-hidden="true"
+            />
+          </span>
+        </label>
+
+        <label className="block min-w-0">
+          <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.24em] text-watsons-cream/45 sm:mb-2 sm:text-[11px]">
+            Search
+          </span>
+          <span className="relative block">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-watsons-cream/42"
+              aria-hidden="true"
+            />
+            <input
+              value={query}
+              onChange={(event) => onQueryChange(event.target.value)}
+              placeholder="Bottle, region, cask..."
+              className="h-10 w-full appearance-none rounded-lg border border-watsons-cream/12 bg-black/35 pl-10 pr-10 text-sm text-watsons-cream outline-none transition [color-scheme:dark] placeholder:text-watsons-cream/35 focus:border-watsons-gold focus:ring-2 focus:ring-watsons-gold/20 sm:h-12"
+            />
+            {query ? (
+              <button
+                type="button"
+                onClick={() => onQueryChange("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-watsons-cream/45 transition hover:text-watsons-gold"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
+            ) : null}
+          </span>
+        </label>
+      </div>
+
+      <div className="mt-3 grid gap-3 sm:mt-5 lg:mt-2 lg:grid-cols-[minmax(0,1fr)_30rem] lg:gap-5">
+        <div>
+          <div className="mb-2 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-watsons-cream/45 sm:mb-3 sm:text-[11px]">
+            <SlidersHorizontal className="h-4 w-4 text-watsons-gold" aria-hidden="true" />
+            Region
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
+            {availableRegions.map((region) => (
+              <FilterChip
+                key={region}
+                label={region}
+                selected={selectedRegion === region}
+                onClick={() => onRegionChange(region)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.22em] text-watsons-cream/45 sm:mb-3 sm:text-[11px]">
+            Price
+          </p>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:flex-nowrap lg:justify-end">
+            {priceFilters.map((filter) => (
+              <button
+                key={filter.id}
+                type="button"
+                onClick={() => onPriceFilterChange(filter.id)}
+                className={`rounded-full border px-4 py-2 text-xs font-bold transition lg:px-3 ${
+                  priceFilter === filter.id
+                    ? "border-watsons-gold bg-watsons-gold text-watsons-dark"
+                    : "border-watsons-cream/14 bg-black/20 text-watsons-cream/70 hover:border-watsons-gold/60 hover:text-watsons-gold"
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+type FilterChipProps = {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+};
+
+function FilterChip({ label, selected, onClick }: FilterChipProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`shrink-0 rounded-full border px-4 py-2 text-xs font-bold transition ${
+        selected
+          ? "border-watsons-gold bg-watsons-gold text-watsons-dark"
+          : "border-watsons-cream/14 bg-watsons-card/70 text-watsons-cream/70 hover:border-watsons-gold/60 hover:text-watsons-gold"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+type MenuCardProps = {
+  item: MenuItem;
+  isSelected: boolean;
+  onSelect: () => void;
+};
+
+function MenuCard({ item, isSelected, onSelect }: MenuCardProps) {
+  return (
+    <button
+      type="button"
+      data-result-card
+      onClick={onSelect}
+      aria-pressed={isSelected}
+      className={`group rounded-lg border p-4 text-left transition duration-200 lg:p-3 ${
+        isSelected
+          ? "border-watsons-gold bg-watsons-gold/10 shadow-[0_0_0_3px_rgba(200,155,66,0.12)]"
+          : "border-watsons-cream/10 bg-watsons-card/58 hover:border-watsons-gold/55 hover:bg-watsons-card"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-4 lg:min-h-[4.75rem]">
+        <div className="min-w-0">
+          <div className="mb-2 flex flex-wrap items-center gap-2 lg:mb-1.5">
+            <span className="rounded-full border border-watsons-cream/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-watsons-cream/45">
+              {item.region ?? "Back bar"}
+            </span>
+          </div>
+          <h3 className="font-serif text-2xl leading-tight text-watsons-cream lg:text-[1.28rem]">
+            {item.name}
+          </h3>
+          <p className="mt-2 text-sm italic text-watsons-cream/52 lg:mt-1.5 lg:text-[0.78rem] lg:leading-4">
+            {item.note ?? tastingHint(item)}
+          </p>
+        </div>
+        <p className="shrink-0 text-sm font-bold text-watsons-gold">{item.price}</p>
+      </div>
+    </button>
+  );
+}
+
+type SelectedPourProps = {
+  item?: MenuItem;
+};
+
+function SelectedPour({ item }: SelectedPourProps) {
+  if (!item) {
+    return (
+      <aside className="rounded-lg border border-watsons-cream/10 bg-watsons-card/50 p-5 text-sm text-watsons-cream/55 lg:sticky lg:top-24">
+        Select a pour to see the details.
+      </aside>
+    );
+  }
+
+  return (
+    <aside className="rounded-lg border border-watsons-gold/25 bg-[linear-gradient(180deg,rgba(20,58,47,0.38),rgba(21,23,21,0.94))] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.34)] sm:p-5 lg:sticky lg:top-24">
+      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-watsons-gold sm:text-[11px]">
+        Selected pour
+      </p>
+      <h3 className="mt-2 font-serif text-3xl leading-tight text-watsons-cream sm:mt-3 sm:text-4xl">
+        {item.name}
+      </h3>
+      <div className="mt-2 flex flex-wrap gap-2 sm:mt-4">
+        <span className="rounded-full border border-watsons-cream/12 px-3 py-1 text-xs font-bold text-watsons-cream/70">
+          {item.region ?? "Back bar"}
+        </span>
+      </div>
+      <p className="mt-3 text-sm leading-6 text-watsons-cream/66 sm:mt-5 sm:leading-7">
+        {item.note
+          ? `${item.note}. A strong candidate when you want something with a little ceremony.`
+          : tastingCopy(item)}
+      </p>
+      <div className="mt-4 flex items-end justify-between border-t border-watsons-cream/10 pt-4 sm:mt-6 sm:pt-5">
+        <span className="text-xs font-bold uppercase tracking-[0.22em] text-watsons-cream/42">
+          Pour
+        </span>
+        <span className="font-serif text-3xl text-watsons-gold sm:text-4xl">{item.price}</span>
+      </div>
+    </aside>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="mt-8 rounded-lg border border-watsons-cream/10 bg-watsons-card/45 px-6 py-12 text-center">
+      <p className="font-serif text-3xl text-watsons-cream">No pours found.</p>
+      <p className="mt-2 text-sm text-watsons-cream/55">
+        Try clearing a filter or searching a broader bottle name.
+      </p>
+    </div>
+  );
+}
+
+function getCategoryCounts() {
+  const counts = new Map<string, number>();
+
+  for (const item of menuItems) {
+    counts.set(item.categoryId, (counts.get(item.categoryId) ?? 0) + 1);
+  }
+
+  return counts;
+}
+
+function matchesPriceFilter(item: MenuItem, filter: PriceFilterId) {
+  const price = parsePrice(item.price);
+
+  if (filter === "under-15") return price < 15;
+  if (filter === "15-25") return price >= 15 && price <= 25;
+  if (filter === "25-plus") return price > 25;
+  return true;
+}
+
+function parsePrice(price: string) {
+  return Number(price.replace(/[^0-9.]/g, ""));
+}
+
+function hasActiveFilters(
+  query: string,
+  selectedRegion: string,
+  priceFilter: PriceFilterId
+) {
+  return query.trim() !== "" || selectedRegion !== "All" || priceFilter !== "all";
+}
+
+function tastingHint(item: MenuItem) {
+  if (item.region === "Islay") return "Peated, coastal, and built for slow sipping.";
+  if (item.region === "Speyside") return "Polished, honeyed, and quietly generous.";
+  if (item.region === "Highland") return "Balanced, textured, and easy to settle into.";
+  if (item.region === "Isle of Skye") return "Maritime, peppery, and a little dramatic.";
+  return "A flexible pour from the Watson's back bar.";
+}
+
+function tastingCopy(item: MenuItem) {
+  if (item.region === "Islay") {
+    return "A smoky, coastal pour with enough edge to stand up after dinner.";
+  }
+
+  if (item.region === "Speyside") {
+    return "A smoother, rounder direction when the table wants richness without too much smoke.";
+  }
+
+  if (item.region === "Highland") {
+    return "A dependable Highland pour, balanced enough for a first dram and layered enough for another.";
+  }
+
+  if (item.region === "Isle of Skye") {
+    return "A maritime pour with salt, pepper, and a little late-night drama.";
+  }
+
+  return "A back-bar pour worth asking the bartender about.";
+}

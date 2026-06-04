@@ -1,0 +1,276 @@
+import { Mail, MapPin, X, Instagram } from "lucide-react";
+import { useState } from "react";
+import { MenuPage } from "./MenuPage";
+
+const backgroundImage =
+  "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=2200&q=85";
+
+export function App() {
+  const [isContactOpen, setIsContactOpen] = useState(false);
+  const pathname = window.location.pathname;
+
+  if (pathname.startsWith("/menu")) {
+    return <MenuPage />;
+  }
+
+  return (
+    <div className="relative min-h-dvh overflow-hidden bg-watsons-dark text-watsons-cream selection:bg-watsons-gold selection:text-watsons-dark">
+      <AmbientBackground />
+
+      <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-7xl flex-col px-6 py-8 sm:px-8 lg:px-12">
+        <Header />
+
+        <main className="flex flex-1 flex-col items-center justify-center pb-14 pt-10 text-center sm:pb-10">
+          <section className="w-full animate-rise space-y-4 sm:space-y-6">
+            <p className="text-xs font-bold uppercase tracking-[0.36em] text-watsons-mist">
+              Toronto's Friendly Local Cocktail Bar
+            </p>
+            <h1 className="mx-auto max-w-4xl font-serif text-4xl leading-[0.95] text-watsons-cream drop-shadow-2xl sm:text-6xl lg:text-7xl">
+              Built by industry,
+              <br />
+              for industry,
+              <br />
+              <span className="italic text-watsons-gold">
+                found by everyone else.
+              </span>
+            </h1>
+          </section>
+
+          <nav
+            aria-label="Primary"
+            className="mt-9 grid w-full max-w-2xl grid-cols-1 gap-3 sm:mt-12 sm:grid-cols-3 sm:gap-4"
+          >
+            <PortalLink href="/menu" label="Menu" detail="Drinks & Food" />
+            <PortalLink
+              href="https://www.opentable.com/"
+              label="Reservations"
+              detail="Book a Table"
+              featured
+              external
+            />
+            <button
+              type="button"
+              onClick={() => setIsContactOpen(true)}
+              className="group min-h-20 rounded-lg border border-watsons-cream/10 bg-watsons-card/50 px-4 py-4 text-center backdrop-blur-md transition duration-300 hover:border-watsons-gold/60 hover:bg-watsons-card/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-gold"
+            >
+              <span className="block text-sm font-bold uppercase tracking-[0.24em] text-watsons-cream transition group-hover:text-watsons-gold">
+                Contact
+              </span>
+              <span className="mt-1 block text-xs font-medium text-watsons-cream/55">
+                Location & Hours
+              </span>
+            </button>
+          </nav>
+        </main>
+
+        <Footer />
+      </div>
+
+      <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
+    </div>
+  );
+}
+
+function AmbientBackground() {
+  return (
+    <div className="absolute inset-0 z-0 overflow-hidden bg-watsons-dark">
+      <img
+        src={backgroundImage}
+        alt="A warmly lit cocktail bar interior"
+        className="h-full w-full animate-subtle-zoom object-cover opacity-50"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-watsons-dark/95 via-watsons-dark/40 to-watsons-dark/95" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(200,155,66,0.16),transparent_42%)] mix-blend-screen" />
+      <div className="absolute inset-0 bg-watsons-green/15 mix-blend-overlay" />
+    </div>
+  );
+}
+
+function Header() {
+  return (
+    <header className="flex shrink-0 items-center justify-center sm:justify-between">
+      <a
+        href="/"
+        className="font-serif text-3xl uppercase tracking-[0.28em] text-watsons-cream"
+        aria-label="Watson's home"
+      >
+        Watson's
+      </a>
+      <a
+        href="https://www.instagram.com/"
+        target="_blank"
+        rel="noreferrer"
+        className="hidden rounded-full p-2 text-watsons-cream/65 transition hover:text-watsons-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-gold sm:inline-flex"
+        aria-label="Watson's on Instagram"
+      >
+        <Instagram className="h-6 w-6" aria-hidden="true" />
+      </a>
+    </header>
+  );
+}
+
+type PortalLinkProps = {
+  href: string;
+  label: string;
+  detail: string;
+  icon?: React.ReactNode;
+  featured?: boolean;
+  external?: boolean;
+};
+
+function PortalLink({ href, label, detail, icon, featured, external }: PortalLinkProps) {
+  const className = featured
+    ? "group min-h-20 rounded-lg border border-watsons-gold bg-watsons-gold/95 px-4 py-4 text-center shadow-glow transition duration-300 hover:bg-watsons-goldHover focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-cream"
+    : "group min-h-20 rounded-lg border border-watsons-cream/10 bg-watsons-card/50 px-4 py-4 text-center backdrop-blur-md transition duration-300 hover:border-watsons-gold/60 hover:bg-watsons-card/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-gold";
+
+  return (
+    <a href={href} className={className} target={external ? "_blank" : undefined} rel={external ? "noreferrer" : undefined}>
+      <span className="flex items-center justify-center gap-2">
+        {icon ? (
+          <span className={featured ? "text-watsons-dark" : "text-watsons-gold"}>
+            {icon}
+          </span>
+        ) : null}
+        <span
+          className={
+            featured
+              ? "text-sm font-bold uppercase tracking-[0.24em] text-watsons-dark"
+              : "text-sm font-bold uppercase tracking-[0.24em] text-watsons-cream transition group-hover:text-watsons-gold"
+          }
+        >
+          {label}
+        </span>
+      </span>
+      <span className={featured ? "mt-1 block text-xs font-medium text-watsons-dark/75" : "mt-1 block text-xs font-medium text-watsons-cream/55"}>
+        {detail}
+      </span>
+    </a>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="flex shrink-0 flex-col items-center justify-between gap-2 pb-2 text-sm text-watsons-cream/50 sm:flex-row sm:pb-0">
+      <p>398 Richmond St W, Toronto, ON</p>
+      <p>Open Daily</p>
+    </footer>
+  );
+}
+
+type ContactModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+};
+
+function ContactModal({ isOpen, onClose }: ContactModalProps) {
+  return (
+    <div
+      className={`absolute inset-0 z-50 flex items-center justify-center bg-watsons-dark/80 px-4 backdrop-blur-xl transition duration-500 ${
+        isOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-5 opacity-0"
+      }`}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="contact-title"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-lg rounded-xl border border-watsons-gold/25 bg-watsons-card p-8 text-center shadow-2xl sm:p-12"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-watsons-dark text-watsons-cream transition hover:bg-black hover:text-watsons-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-gold"
+          aria-label="Close contact details"
+        >
+          <X className="h-5 w-5" aria-hidden="true" />
+        </button>
+
+        <h2 id="contact-title" className="font-serif text-4xl text-watsons-gold">
+          Find Us
+        </h2>
+        <p className="mt-2 font-medium text-watsons-cream/70">
+          Walk-ins always welcome.
+        </p>
+
+        <div className="mt-8 space-y-6 text-watsons-cream">
+          <InfoBlock heading="Address">
+            388 Richmond St W
+            <br />
+            Toronto, ON M5V 3P1
+          </InfoBlock>
+          <Divider />
+          <InfoBlock heading="Hours">
+            Monday - Sunday
+            <br />
+            5:00 PM - 2:00 AM
+          </InfoBlock>
+          <Divider />
+          <div>
+            <h3 className="mb-3 text-xs uppercase tracking-[0.24em] text-watsons-cream/45">
+              Get in touch
+            </h3>
+            <div className="flex justify-center gap-5">
+              <IconLink href="https://www.instagram.com/" label="Instagram">
+                <Instagram className="h-6 w-6" />
+              </IconLink>
+              <IconLink href="mailto:hello@watsons.example" label="Email">
+                <Mail className="h-6 w-6" />
+              </IconLink>
+            </div>
+          </div>
+        </div>
+
+        <a
+          href="https://maps.google.com/?q=388+Richmond+St+W,+Toronto"
+          target="_blank"
+          rel="noreferrer"
+          className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-watsons-green bg-watsons-green px-5 py-4 text-sm font-bold uppercase tracking-[0.24em] text-watsons-cream transition hover:border-watsons-gold hover:bg-watsons-gold hover:text-watsons-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-gold"
+        >
+          <MapPin className="h-5 w-5" aria-hidden="true" />
+          Get Directions
+        </a>
+      </div>
+    </div>
+  );
+}
+
+type InfoBlockProps = {
+  heading: string;
+  children: React.ReactNode;
+};
+
+function InfoBlock({ heading, children }: InfoBlockProps) {
+  return (
+    <div>
+      <h3 className="mb-1 text-xs uppercase tracking-[0.24em] text-watsons-cream/45">
+        {heading}
+      </h3>
+      <p className="text-lg leading-relaxed">{children}</p>
+    </div>
+  );
+}
+
+function Divider() {
+  return <hr className="mx-auto w-1/2 border-watsons-cream/10" />;
+}
+
+type IconLinkProps = {
+  href: string;
+  label: string;
+  children: React.ReactNode;
+};
+
+function IconLink({ href, label, children }: IconLinkProps) {
+  return (
+    <a
+      href={href}
+      target={href.startsWith("http") ? "_blank" : undefined}
+      rel={href.startsWith("http") ? "noreferrer" : undefined}
+      className="text-watsons-cream transition hover:text-watsons-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-gold"
+      aria-label={label}
+    >
+      {children}
+    </a>
+  );
+}
