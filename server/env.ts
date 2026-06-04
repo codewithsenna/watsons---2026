@@ -1,4 +1,10 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+if (!process.env.MONGODB_URI) {
+  dotenv.config({ path: ".env.example" });
+}
 
 function getEnv(name: string, fallback = "") {
   return process.env[name] ?? fallback;
@@ -17,9 +23,10 @@ export const env = {
   siteUrl: getEnv("SITE_URL"),
   publicApiBaseUrl: getEnv("VITE_PUBLIC_API_BASE_URL", "/api"),
   mongodb: {
-    uri: getEnv("MONGODB_URI"),
+    uri: getEnv("MONGODB_URI", getEnv("MONGO_URI")),
     dbName: getEnv("MONGODB_DB_NAME", "watsons"),
-    liquorCollection: getEnv("MONGODB_LIQUOR_COLLECTION", "liquor_menu")
+    liquorCollection: getEnv("MONGODB_LIQUOR_COLLECTION", "menus"),
+    menuDocumentTitle: getEnv("MONGODB_MENU_DOCUMENT_TITLE", "qrMenu")
   },
   menuApi: {
     baseUrl: getEnv("MENU_API_BASE_URL"),

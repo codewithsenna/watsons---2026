@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 import type { ViteDevServer } from "vite";
 import { seoByPath } from "../src/seo";
 import { env } from "./env";
+import { loadMenuFromDatabase } from "./menuRepository";
+import { menuRoutes } from "./routes/menuRoutes";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
@@ -12,6 +14,17 @@ const isProduction = env.nodeEnv === "production";
 const port = env.port;
 
 const app = express();
+
+app.use("/api/menus", menuRoutes);
+
+app.get("/api/menu", async (_request, response, next) => {
+  try {
+    const menu = await loadMenuFromDatabase();
+    response.json(menu);
+  } catch (error) {
+    next(error);
+  }
+});
 
 let vite: ViteDevServer | undefined;
 

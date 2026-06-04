@@ -16,9 +16,9 @@ import {
   type UIEvent,
   type WheelEvent as ReactWheelEvent
 } from "react";
-import { menuCategories, menuItems, regionFilters, type MenuItem } from "./menuData";
+import type { MenuApiResponse, MenuCategory, MenuItem } from "./menuData";
 
-const defaultCategoryId = "single-malt-scotch";
+const apiBaseUrl = (import.meta.env.VITE_PUBLIC_API_BASE_URL ?? "/api").replace(/\/$/, "");
 const initialVisibleCount = 8;
 const visibleStep = 6;
 const desktopPageSize = 6;
@@ -33,7 +33,11 @@ const priceFilters = [
 type PriceFilterId = (typeof priceFilters)[number]["id"];
 
 export function MenuPage() {
-  const [categoryId, setCategoryId] = useState(defaultCategoryId);
+  const [menuData, setMenuData] = useState<MenuApiResponse>({
+    categories: [],
+    items: []
+  });
+  const [categoryId, setCategoryId] = useState("");
   const [query, setQuery] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("All");
   const [priceFilter, setPriceFilter] = useState<PriceFilterId>("all");
@@ -42,22 +46,35 @@ export function MenuPage() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [mobileLocked, setMobileLocked] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [isMenuLoading, setIsMenuLoading] = useState(true);
+  const [menuError, setMenuError] = useState("");
   const resultsRef = useRef<HTMLDivElement>(null);
   const selectedPourRef = useRef<HTMLDivElement>(null);
   const lockScrollYRef = useRef(0);
   const touchStartYRef = useRef(0);
+  const menuCategories = menuData.categories;
+  const menuItems = menuData.items;
 
   const activeCategory =
     menuCategories.find((category) => category.id === categoryId) ?? menuCategories[0];
-  const itemCountsByCategory = getCategoryCounts();
-  const categoryItems = menuItems.filter((item) => item.categoryId === activeCategory.id);
+  const itemCountsByCategory = useMemo(() => getCategoryCounts(menuItems), [menuItems]);
+  const categoryItems = useMemo(
+    () =>
+      activeCategory
+        ? menuItems.filter((item) => item.categoryId === activeCategory.id)
+        : [],
+    [activeCategory, menuItems]
+  );
 
-  const availableRegions = [
-    "All",
-    ...regionFilters.filter((region) =>
-      categoryItems.some((item) => item.region === region)
-    )
-  ];
+  const availableRegions = useMemo(() => {
+    const regions = new Set(
+      categoryItems
+        .map((item) => item.region)
+        .filter((region): region is string => Boolean(region))
+    );
+
+    return ["All", ...[...regions].sort((first, second) => first.localeCompare(second))];
+  }, [categoryItems]);
 
   const filteredItems = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -92,6 +109,54 @@ export function MenuPage() {
     (isDesktop ? desktopPageItems[0] : filteredItems[0]);
 
   const hasMore = visibleCount < filteredItems.length;
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadMenu() {
+      try {
+        setIsMenuLoading(true);
+        setMenuError("");
+
+        const response = await fetch(`${apiBaseUrl}/menu`, {
+          signal: controller.signal
+        });
+
+        if (!response.ok) {
+          throw new Error(`Menu request failed with status ${response.status}`);
+        }
+
+        const nextMenuData = (await response.json()) as MenuApiResponse;
+
+        setMenuData(nextMenuData);
+        setCategoryId((currentCategoryId) =>
+          nextMenuData.categories.some(
+            (category) => category.id === currentCategoryId
+          )
+            ? currentCategoryId
+            : nextMenuData.categories[0]?.id ?? ""
+        );
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
+        setMenuError(
+          error instanceof Error ? error.message : "Unable to load menu data."
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsMenuLoading(false);
+        }
+      }
+    }
+
+    void loadMenu();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(min-width: 1024px)");
@@ -239,11 +304,25 @@ export function MenuPage() {
       <main className="mx-auto min-w-0 w-full max-w-[92rem] px-5 pb-10 pt-3 sm:px-8 lg:flex lg:h-[calc(100dvh-5rem)] lg:flex-col lg:overflow-hidden lg:pb-5 lg:pt-5">
         <Hero />
 
+        {isMenuLoading ? (
+          <MenuStatus title="Loading menu..." />
+        ) : menuError ? (
+          <MenuStatus
+            title="Menu unavailable"
+            detail="The database menu could not be loaded."
+          />
+        ) : !activeCategory ? (
+          <MenuStatus
+            title="No menu data found"
+            detail="The database did not return any displayable menu items."
+          />
+        ) : (
         <section className="flex min-w-0 flex-col gap-3 lg:mt-4 lg:min-h-0 lg:flex-1">
           <div className="min-w-0">
             <FilterPanel
               activeCategoryId={categoryId}
               availableRegions={availableRegions}
+              categories={menuCategories}
               itemCountsByCategory={itemCountsByCategory}
               priceFilter={priceFilter}
               query={query}
@@ -268,15 +347,17 @@ export function MenuPage() {
               <div className="flex shrink-0 flex-col gap-1 border-b border-watsons-cream/10 p-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4 sm:p-5 lg:px-5 lg:py-3">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-watsons-gold sm:text-xs sm:tracking-[0.3em]">
-                    {activeCategory.eyebrow}
+                    {activeCategory.eyebrow ?? "Menu"}
                   </p>
                   <h2 className="mt-1 font-serif text-xl leading-none text-watsons-cream sm:text-4xl lg:text-3xl">
                     {activeCategory.label}
                   </h2>
                 </div>
-                <p className="hidden max-w-xl text-sm leading-7 text-watsons-cream/58 xl:block">
-                  {activeCategory.description}
-                </p>
+                {activeCategory.description ? (
+                  <p className="hidden max-w-xl text-sm leading-7 text-watsons-cream/58 xl:block">
+                    {activeCategory.description}
+                  </p>
+                ) : null}
               </div>
 
               <div className="flex shrink-0 items-center justify-between gap-4 border-b border-watsons-cream/10 px-3 py-2 sm:px-5 sm:py-3 lg:px-5 lg:py-2">
@@ -347,6 +428,7 @@ export function MenuPage() {
             </div>
           </div>
         </section>
+        )}
       </main>
     </div>
   );
@@ -497,6 +579,7 @@ function Hero() {
 type FilterPanelProps = {
   activeCategoryId: string;
   availableRegions: string[];
+  categories: MenuCategory[];
   itemCountsByCategory: Map<string, number>;
   priceFilter: PriceFilterId;
   query: string;
@@ -510,6 +593,7 @@ type FilterPanelProps = {
 function FilterPanel({
   activeCategoryId,
   availableRegions,
+  categories,
   itemCountsByCategory,
   priceFilter,
   query,
@@ -532,7 +616,7 @@ function FilterPanel({
               onChange={(event) => onCategoryChange(event.target.value)}
               className="h-10 w-full appearance-none rounded-lg border border-watsons-gold bg-watsons-card px-4 pr-10 text-sm font-bold text-watsons-cream outline-none transition focus:ring-2 focus:ring-watsons-gold/25 sm:h-12"
             >
-              {menuCategories.map((category) => (
+              {categories.map((category) => (
                 <option
                   key={category.id}
                   value={category.id}
@@ -735,7 +819,18 @@ function EmptyState() {
   );
 }
 
-function getCategoryCounts() {
+function MenuStatus({ title, detail }: { title: string; detail?: string }) {
+  return (
+    <section className="mt-4 rounded-lg border border-watsons-cream/10 bg-[#10110f] px-6 py-12 text-center">
+      <p className="font-serif text-3xl text-watsons-cream">{title}</p>
+      {detail ? (
+        <p className="mt-2 text-sm text-watsons-cream/55">{detail}</p>
+      ) : null}
+    </section>
+  );
+}
+
+function getCategoryCounts(menuItems: MenuItem[]) {
   const counts = new Map<string, number>();
 
   for (const item of menuItems) {
