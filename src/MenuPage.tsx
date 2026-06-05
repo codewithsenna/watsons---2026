@@ -819,8 +819,7 @@ function SelectedPour({ item, compact = false }: SelectedPourProps) {
       <div className="mt-1.5 flex items-start justify-between gap-3 sm:mt-2 lg:block">
         <div className="min-w-0">
           <h3
-            className={`font-serif leading-tight text-watsons-cream ${compact ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl"
-              }`}
+           className={`font-serif leading-tight text-watsons-cream ${compact ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl"}`}
           >
             {item.name}
           </h3>
