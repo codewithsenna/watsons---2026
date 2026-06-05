@@ -188,11 +188,10 @@ type ContactModalProps = {
 function ContactModal({ isOpen, onClose }: ContactModalProps) {
   return (
     <div
-      className={`absolute inset-0 z-50 flex items-center justify-center bg-watsons-dark/80 px-4 backdrop-blur-xl transition duration-500 ${
-        isOpen
-          ? "translate-y-0 opacity-100"
-          : "pointer-events-none translate-y-5 opacity-0"
-      }`}
+      className={`absolute inset-0 z-50 flex items-center justify-center bg-watsons-dark/80 px-4 backdrop-blur-xl transition duration-500 ${isOpen
+        ? "translate-y-0 opacity-100"
+        : "pointer-events-none translate-y-5 opacity-0"
+        }`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="contact-title"
@@ -252,12 +251,24 @@ function ContactModal({ isOpen, onClose }: ContactModalProps) {
             </div>
           </div>
         </div>
-
+        <div className="mt-8 overflow-hidden whitespace-nowrap border-y border-watsons-gold/25 py-1.5">
+          <div className="flex w-max animate-marquee gap-6">
+            <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-watsons-gold sm:text-xs sm:tracking-[0.2em]">
+              BUCK A SHUCK - HALF PRICE WINE BOTTLE - BUY 1 GET 1 FREE
+            </span>
+            <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-watsons-gold sm:text-xs sm:tracking-[0.2em]">
+              BUCK A SHUCK - HALF PRICE WINE BOTTLE - BUY 1 GET 1 FREE
+            </span>
+            <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-watsons-gold sm:text-xs sm:tracking-[0.2em]">
+              BUCK A SHUCK - HALF PRICE WINE BOTTLE - BUY 1 GET 1 FREE
+            </span>
+          </div>
+        </div>
         <a
           href="https://maps.google.com/?q=398+Richmond+St+W,+Toronto"
           target="_blank"
           rel="noreferrer"
-          className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-watsons-green bg-watsons-green px-5 py-4 text-sm font-bold uppercase tracking-[0.24em] text-watsons-cream transition hover:border-watsons-gold hover:bg-watsons-gold hover:text-watsons-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-gold"
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-watsons-green bg-watsons-green px-5 py-4 text-sm font-bold uppercase tracking-[0.24em] text-watsons-cream transition hover:border-watsons-gold hover:bg-watsons-gold hover:text-watsons-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-gold"
         >
           <MapPin className="h-5 w-5" aria-hidden="true" />
           Get Directions
