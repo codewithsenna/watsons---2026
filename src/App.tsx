@@ -122,28 +122,41 @@ type PortalLinkProps = {
 
 function PortalLink({ href, label, detail, icon, featured, external }: PortalLinkProps) {
   const className = featured
-    ? "group min-h-20 rounded-lg border border-watsons-gold bg-watsons-gold/95 px-4 py-4 text-center shadow-glow transition duration-300 hover:bg-watsons-goldHover focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-cream"
-    : "group min-h-20 rounded-lg border border-watsons-cream/10 bg-watsons-card/50 px-4 py-4 text-center backdrop-blur-md transition duration-300 hover:border-watsons-gold/60 hover:bg-watsons-card/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-gold";
+    ? "group min-h-[58px] rounded-lg border border-watsons-gold bg-watsons-gold/95 px-3 py-2 text-center shadow-glow transition duration-300 hover:bg-watsons-goldHover focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-cream sm:min-h-20 sm:px-4 sm:py-4"
+    : "group min-h-[58px] rounded-lg border border-watsons-cream/10 bg-watsons-card/50 px-3 py-2 text-center backdrop-blur-md transition duration-300 hover:border-watsons-gold/60 hover:bg-watsons-card/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-gold sm:min-h-20 sm:px-4 sm:py-4";
 
   return (
-    <a href={href} className={className} target={external ? "_blank" : undefined} rel={external ? "noreferrer" : undefined}>
+    <a
+      href={href}
+      className={className}
+      target={external ? "_blank" : undefined}
+      rel={external ? "noreferrer" : undefined}
+    >
       <span className="flex items-center justify-center gap-2">
         {icon ? (
           <span className={featured ? "text-watsons-dark" : "text-watsons-gold"}>
             {icon}
           </span>
         ) : null}
+
         <span
           className={
             featured
-              ? "text-sm font-bold uppercase tracking-[0.24em] text-watsons-dark"
-              : "text-sm font-bold uppercase tracking-[0.24em] text-watsons-cream transition group-hover:text-watsons-gold"
+              ? "text-[10px] font-bold uppercase tracking-[0.16em] text-watsons-dark sm:text-sm sm:tracking-[0.24em]"
+              : "text-[10px] font-bold uppercase tracking-[0.16em] text-watsons-cream transition group-hover:text-watsons-gold sm:text-sm sm:tracking-[0.24em]"
           }
         >
           {label}
         </span>
       </span>
-      <span className={featured ? "mt-1 block text-xs font-medium text-watsons-dark/75" : "mt-1 block text-xs font-medium text-watsons-cream/55"}>
+
+      <span
+        className={
+          featured
+            ? "mt-0.5 block text-[10px] font-medium text-watsons-dark/75 sm:mt-1 sm:text-xs"
+            : "mt-0.5 block text-[10px] font-medium text-watsons-cream/55 sm:mt-1 sm:text-xs"
+        }
+      >
         {detail}
       </span>
     </a>
