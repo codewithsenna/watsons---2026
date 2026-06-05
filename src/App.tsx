@@ -40,7 +40,7 @@ export function App() {
 
           <nav
             aria-label="Primary"
-            className="mt-9 grid w-full max-w-2xl grid-cols-1 gap-3 sm:mt-12 sm:grid-cols-3 sm:gap-4"
+            className="mt-5 grid w-full max-w-2xl grid-cols-1 gap-2 sm:mt-12 sm:grid-cols-3 sm:gap-4"
           >
             <PortalLink href="/menu" label="Menu" detail="Drinks & Food" />
             <PortalLink
@@ -53,12 +53,12 @@ export function App() {
             <button
               type="button"
               onClick={() => setIsContactOpen(true)}
-              className="group min-h-20 rounded-lg border border-watsons-cream/10 bg-watsons-card/50 px-4 py-4 text-center backdrop-blur-md transition duration-300 hover:border-watsons-gold/60 hover:bg-watsons-card/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-gold"
+              className="group mx-auto flex min-h-[42px] w-[78%] flex-col items-center justify-center rounded-lg border border-watsons-cream/10 bg-watsons-card/50 px-3 py-1 text-center backdrop-blur-md transition duration-300 hover:border-watsons-gold/60 hover:bg-watsons-card/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-gold sm:min-h-20 sm:w-full sm:px-4 sm:py-4"
             >
-              <span className="block text-sm font-bold uppercase tracking-[0.24em] text-watsons-cream transition group-hover:text-watsons-gold">
+              <span className="block text-[8px] font-bold uppercase tracking-[0.12em] text-watsons-cream transition group-hover:text-watsons-gold sm:text-sm sm:tracking-[0.24em]">
                 Contact
               </span>
-              <span className="mt-1 block text-xs font-medium text-watsons-cream/55">
+              <span className="mt-0.5 block text-[8px] font-medium text-watsons-cream/55 sm:mt-1 sm:text-xs">
                 Location & Hours
               </span>
             </button>
@@ -122,8 +122,8 @@ type PortalLinkProps = {
 
 function PortalLink({ href, label, detail, icon, featured, external }: PortalLinkProps) {
   const className = featured
-    ? "group min-h-[58px] rounded-lg border border-watsons-gold bg-watsons-gold/95 px-3 py-2 text-center shadow-glow transition duration-300 hover:bg-watsons-goldHover focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-cream sm:min-h-20 sm:px-4 sm:py-4"
-    : "group min-h-[58px] rounded-lg border border-watsons-cream/10 bg-watsons-card/50 px-3 py-2 text-center backdrop-blur-md transition duration-300 hover:border-watsons-gold/60 hover:bg-watsons-card/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-gold sm:min-h-20 sm:px-4 sm:py-4";
+    ? "group mx-auto flex min-h-[42px] w-[78%] flex-col items-center justify-center rounded-lg border border-watsons-gold bg-watsons-gold/95 px-3 py-1 text-center shadow-glow transition duration-300 hover:bg-watsons-goldHover focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-cream sm:min-h-20 sm:w-full sm:px-4 sm:py-4"
+    : "group mx-auto flex min-h-[42px] w-[78%] flex-col items-center justify-center rounded-lg border border-watsons-cream/10 bg-watsons-card/50 px-3 py-1 text-center backdrop-blur-md transition duration-300 hover:border-watsons-gold/60 hover:bg-watsons-card/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-gold sm:min-h-20 sm:w-full sm:px-4 sm:py-4";
 
   return (
     <a
@@ -142,8 +142,8 @@ function PortalLink({ href, label, detail, icon, featured, external }: PortalLin
         <span
           className={
             featured
-              ? "text-[10px] font-bold uppercase tracking-[0.16em] text-watsons-dark sm:text-sm sm:tracking-[0.24em]"
-              : "text-[10px] font-bold uppercase tracking-[0.16em] text-watsons-cream transition group-hover:text-watsons-gold sm:text-sm sm:tracking-[0.24em]"
+              ? "text-[8px] font-bold uppercase tracking-[0.12em] text-watsons-dark sm:text-sm sm:tracking-[0.24em]"
+              : "text-[8px] font-bold uppercase tracking-[0.12em] text-watsons-cream transition group-hover:text-watsons-gold sm:text-sm sm:tracking-[0.24em]"
           }
         >
           {label}
@@ -153,8 +153,8 @@ function PortalLink({ href, label, detail, icon, featured, external }: PortalLin
       <span
         className={
           featured
-            ? "mt-0.5 block text-[10px] font-medium text-watsons-dark/75 sm:mt-1 sm:text-xs"
-            : "mt-0.5 block text-[10px] font-medium text-watsons-cream/55 sm:mt-1 sm:text-xs"
+            ? "mt-0.5 block text-[8px] font-medium text-watsons-dark/75 sm:mt-1 sm:text-xs"
+            : "mt-0.5 block text-[8px] font-medium text-watsons-cream/55 sm:mt-1 sm:text-xs"
         }
       >
         {detail}
@@ -167,7 +167,11 @@ function Footer() {
   return (
     <footer className="flex shrink-0 flex-col items-center justify-between gap-2 pb-2 text-sm text-watsons-cream/50 sm:flex-row sm:pb-0">
       <p>
-        <a href="https://www.google.com/maps/dir//398+Richmond+St+W,+Toronto,+ON+M5V+3P1/@43.6436709,-79.3883802,16z/data=!4m7!4m6!1m1!4e2!1m2!1m1!1s0x882b34db08c95555:0x1e502465748c499b!3e0?gl=ca" target="_blank" rel="noopener noreferrer">
+        <a
+          href="https://www.google.com/maps/dir//398+Richmond+St+W,+Toronto,+ON+M5V+3P1/@43.6436709,-79.3883802,16z/data=!4m7!4m6!1m1!4e2!1m2!1m1!1s0x882b34db08c95555:0x1e502465748c499b!3e0?gl=ca"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           398 Richmond St W
         </a>
       </p>
@@ -184,8 +188,11 @@ type ContactModalProps = {
 function ContactModal({ isOpen, onClose }: ContactModalProps) {
   return (
     <div
-      className={`absolute inset-0 z-50 flex items-center justify-center bg-watsons-dark/80 px-4 backdrop-blur-xl transition duration-500 ${isOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-5 opacity-0"
-        }`}
+      className={`absolute inset-0 z-50 flex items-center justify-center bg-watsons-dark/80 px-4 backdrop-blur-xl transition duration-500 ${
+        isOpen
+          ? "translate-y-0 opacity-100"
+          : "pointer-events-none translate-y-5 opacity-0"
+      }`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="contact-title"
