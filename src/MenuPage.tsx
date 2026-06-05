@@ -765,10 +765,11 @@ function MenuCard({ item, isSelected, onSelect }: MenuCardProps) {
       data-result-card
       onClick={onSelect}
       aria-pressed={isSelected}
-      className={`group w-full rounded-lg border p-3 text-left transition duration-200 sm:p-4 lg:p-3 ${isSelected
-        ? "border-watsons-gold bg-watsons-gold/10 shadow-[0_0_0_3px_rgba(200,155,66,0.12)]"
-        : "border-transparent bg-watsons-card/58 hover:border-watsons-gold/42 hover:bg-watsons-card"
-        }`}
+      className={`group w-full rounded-lg border border-x-transparent border-t-transparent p-3 text-left transition duration-200 sm:p-4 lg:p-3 ${
+        isSelected
+          ? "border-watsons-gold bg-watsons-gold/10 shadow-[0_0_0_3px_rgba(200,155,66,0.12)]"
+          : "border-b-watsons-cream/10 bg-watsons-card/58 hover:border-watsons-gold/42 hover:bg-watsons-card"
+      }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -781,13 +782,11 @@ function MenuCard({ item, isSelected, onSelect }: MenuCardProps) {
           <h3 className="font-serif text-[1.35rem] leading-tight text-watsons-cream sm:text-2xl lg:text-[1.28rem]">
             {item.name}
           </h3>
-
-          <p className="mt-1.5 line-clamp-2 text-[12px] italic leading-5 text-watsons-cream/58 sm:text-sm lg:text-[0.78rem] lg:leading-4">
-            {getDisplayDescription(item)}
-          </p>
         </div>
 
-        <p className="shrink-0 text-sm font-bold text-watsons-gold">{item.price}</p>
+        <p className="shrink-0 text-sm font-bold text-watsons-gold">
+          {item.price}
+        </p>
       </div>
     </button>
   );
