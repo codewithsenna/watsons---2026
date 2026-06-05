@@ -669,7 +669,7 @@ function FilterPanel({
               value={query}
               onChange={(event) => onQueryChange(event.target.value)}
               placeholder="Bottle, region, cask..."
-className="h-11 w-full appearance-none rounded-lg border border-transparent bg-black/35 pl-10 pr-10 text-base text-watsons-cream outline-none transition [color-scheme:dark] placeholder:text-watsons-cream/35 focus:border-watsons-gold/45 focus:ring-2 focus:ring-watsons-gold/15 sm:h-12 sm:text-sm"
+              className="h-11 w-full appearance-none rounded-lg border border-transparent bg-black/35 pl-10 pr-10 text-base text-watsons-cream outline-none transition [color-scheme:dark] placeholder:text-watsons-cream/35 focus:border-watsons-gold/45 focus:ring-2 focus:ring-watsons-gold/15 sm:h-12 sm:text-sm"
             />
 
             {query ? (
