@@ -297,7 +297,7 @@ export function MenuPage() {
               onRegionChange={setSelectedRegion}
             />
 
-            <div className="sticky top-[4.35rem] z-30 -mx-1 bg-watsons-dark/95 px-1 pb-2 backdrop-blur-xl lg:hidden">
+            <div className="sticky top-[5.75rem] z-30 -mx-1 bg-watsons-dark/95 px-1 pb-3 pt-3 backdrop-blur-xl lg:hidden">
               <SelectedPour item={selectedItem} compact />
             </div>
 
@@ -349,7 +349,7 @@ export function MenuPage() {
                   <div
                     ref={resultsRef}
                     onScroll={handleResultsScroll}
-  className="max-h-[calc(100dvh-15.5rem)] overflow-y-auto overscroll-contain px-3 pb-3 pt-1 sm:px-5 sm:pb-5 lg:max-h-[calc(100dvh-24rem)] lg:overflow-y-auto lg:px-4 lg:pb-4 lg:pr-3 lg:[scrollbar-gutter:stable]"
+                    className="max-h-[calc(100dvh-18.5rem)] overflow-y-auto overscroll-contain px-3 pb-3 pt-1 sm:px-5 sm:pb-5 lg:max-h-[calc(100dvh-24rem)] lg:overflow-y-auto lg:px-4 lg:pb-4 lg:pr-3 lg:[scrollbar-gutter:stable]"
                   >
                     <div className="grid gap-2.5 xl:grid-cols-2">
                       {visibleItems.map((item) => (
@@ -610,9 +610,8 @@ function FilterPanel({
           >
             <span className="truncate">{activeCategory?.label ?? "Menu"}</span>
             <ChevronDown
-              className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-watsons-gold transition ${
-                isCategoryMenuOpen ? "rotate-180" : ""
-              }`}
+              className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-watsons-gold transition ${isCategoryMenuOpen ? "rotate-180" : ""
+                }`}
               aria-hidden="true"
             />
           </button>
@@ -635,11 +634,10 @@ function FilterPanel({
                     aria-selected={isSelected}
                     disabled={isDisabled}
                     onClick={() => handleCategorySelect(category.id)}
-                    className={`block w-full rounded-md px-3 py-2 text-left text-sm font-bold transition ${
-                      isSelected
-                        ? "bg-watsons-gold/10 text-watsons-gold shadow-[inset_2px_0_0_rgba(200,155,66,0.9)]"
-                        : "text-watsons-cream/76 hover:bg-watsons-gold/8 hover:text-watsons-cream"
-                    } disabled:cursor-not-allowed disabled:text-watsons-cream/24`}
+                    className={`block w-full rounded-md px-3 py-2 text-left text-sm font-bold transition ${isSelected
+                      ? "bg-watsons-gold/10 text-watsons-gold shadow-[inset_2px_0_0_rgba(200,155,66,0.9)]"
+                      : "text-watsons-cream/76 hover:bg-watsons-gold/8 hover:text-watsons-cream"
+                      } disabled:cursor-not-allowed disabled:text-watsons-cream/24`}
                   >
                     {category.label}
                   </button>
@@ -711,11 +709,10 @@ function FilterPanel({
                 key={filter.id}
                 type="button"
                 onClick={() => onPriceFilterChange(filter.id)}
-                className={`h-9 shrink-0 rounded-full border px-4 text-[11px] font-bold transition sm:h-10 sm:text-xs lg:px-3 ${
-                  priceFilter === filter.id
-                    ? "border-watsons-gold bg-watsons-gold text-watsons-dark"
-                    : "border-transparent bg-black/24 text-watsons-cream/72 hover:border-watsons-gold/45 hover:text-watsons-gold"
-                }`}
+                className={`h-9 shrink-0 rounded-full border px-4 text-[11px] font-bold transition sm:h-10 sm:text-xs lg:px-3 ${priceFilter === filter.id
+                  ? "border-watsons-gold bg-watsons-gold text-watsons-dark"
+                  : "border-transparent bg-black/24 text-watsons-cream/72 hover:border-watsons-gold/45 hover:text-watsons-gold"
+                  }`}
               >
                 {filter.label}
               </button>
@@ -738,11 +735,10 @@ function FilterChip({ label, selected, onClick }: FilterChipProps) {
     <button
       type="button"
       onClick={onClick}
-      className={`h-9 shrink-0 rounded-full border px-4 text-[11px] font-bold transition sm:h-10 sm:text-xs ${
-        selected
-          ? "border-watsons-gold bg-watsons-gold text-watsons-dark"
-          : "border-transparent bg-watsons-card/70 text-watsons-cream/72 hover:border-watsons-gold/45 hover:text-watsons-gold"
-      }`}
+      className={`h-9 shrink-0 rounded-full border px-4 text-[11px] font-bold transition sm:h-10 sm:text-xs ${selected
+        ? "border-watsons-gold bg-watsons-gold text-watsons-dark"
+        : "border-transparent bg-watsons-card/70 text-watsons-cream/72 hover:border-watsons-gold/45 hover:text-watsons-gold"
+        }`}
     >
       {label}
     </button>
@@ -762,11 +758,10 @@ function MenuCard({ item, isSelected, onSelect }: MenuCardProps) {
       data-result-card
       onClick={onSelect}
       aria-pressed={isSelected}
-      className={`group w-full rounded-lg border p-3 text-left transition duration-200 sm:p-4 lg:p-3 ${
-        isSelected
-          ? "border-watsons-gold bg-watsons-gold/10 shadow-[0_0_0_3px_rgba(200,155,66,0.12)]"
-          : "border-transparent bg-watsons-card/58 hover:border-watsons-gold/42 hover:bg-watsons-card"
-      }`}
+      className={`group w-full rounded-lg border p-3 text-left transition duration-200 sm:p-4 lg:p-3 ${isSelected
+        ? "border-watsons-gold bg-watsons-gold/10 shadow-[0_0_0_3px_rgba(200,155,66,0.12)]"
+        : "border-transparent bg-watsons-card/58 hover:border-watsons-gold/42 hover:bg-watsons-card"
+        }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -807,9 +802,8 @@ function SelectedPour({ item, compact = false }: SelectedPourProps) {
 
   return (
     <aside
-      className={`rounded-lg border border-watsons-gold/25 bg-[linear-gradient(180deg,rgba(20,58,47,0.42),rgba(21,23,21,0.96))] shadow-[0_20px_60px_rgba(0,0,0,0.38)] backdrop-blur-xl lg:sticky lg:top-24 ${
-        compact ? "p-3" : "p-4 sm:p-5"
-      }`}
+      className={`rounded-lg border border-watsons-gold/25 bg-[linear-gradient(180deg,rgba(20,58,47,0.42),rgba(21,23,21,0.96))] shadow-[0_20px_60px_rgba(0,0,0,0.38)] backdrop-blur-xl lg:sticky lg:top-24 ${compact ? "p-3" : "p-4 sm:p-5"
+        }`}
     >
       <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-watsons-gold sm:text-[11px]">
         Selected pour
@@ -818,9 +812,8 @@ function SelectedPour({ item, compact = false }: SelectedPourProps) {
       <div className="mt-1.5 flex items-start justify-between gap-3 sm:mt-2 lg:block">
         <div className="min-w-0">
           <h3
-            className={`font-serif leading-tight text-watsons-cream ${
-              compact ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl"
-            }`}
+            className={`font-serif leading-tight text-watsons-cream ${compact ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl"
+              }`}
           >
             {item.name}
           </h3>
@@ -840,11 +833,10 @@ function SelectedPour({ item, compact = false }: SelectedPourProps) {
       </div>
 
       <p
-        className={`text-sm text-watsons-cream/72 ${
-          compact
-            ? "mt-2 line-clamp-2 leading-5"
-            : "mt-3 leading-6 sm:mt-5 sm:leading-7"
-        }`}
+        className={`text-sm text-watsons-cream/72 ${compact
+          ? "mt-2 line-clamp-2 leading-5"
+          : "mt-3 leading-6 sm:mt-5 sm:leading-7"
+          }`}
       >
         {getDisplayDescription(item)}
       </p>

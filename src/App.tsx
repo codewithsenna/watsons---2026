@@ -42,7 +42,7 @@ export function App() {
             aria-label="Primary"
             className="mt-5 grid w-full max-w-2xl grid-cols-1 gap-2 sm:mt-12 sm:grid-cols-3 sm:gap-4"
           >
-            <PortalLink href="/menu" label="Menu" detail="Drinks & Food" />
+            <PortalLink href="/menu" label="Menu" detail="Drinks" />
             <PortalLink
               href={reservationsUrl}
               label="Reservations"
