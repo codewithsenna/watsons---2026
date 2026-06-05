@@ -10,6 +10,8 @@ export type MenuItem = {
   categoryId: string;
   name: string;
   price: string;
+  description?: string;
+  displayDescription?: string;
   region?: string;
   note?: string;
   featured?: boolean;

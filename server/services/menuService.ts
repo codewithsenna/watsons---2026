@@ -86,7 +86,12 @@ export async function getMenuDetails(
 
   if (search) {
     const regex = new RegExp(escapeRegex(search), "i");
-    itemFilter.$or = [{ name: regex }, { description: regex }];
+    itemFilter.$or = [
+      { name: regex },
+      { description: regex },
+      { displayDescription: regex },
+      { tags: regex }
+    ];
   }
 
   const priceFilter = createPriceFilter(query);
@@ -196,6 +201,7 @@ function serializeMenuItem(item: MenuItemDocument & { _id: Types.ObjectId }) {
     name: item.name,
     slug: item.slug,
     description: item.description,
+    displayDescription: item.displayDescription,
     pricing: item.pricing,
     tags: item.tags,
     imageUrl: item.imageUrl,

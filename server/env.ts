@@ -2,10 +2,6 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-if (!process.env.MONGODB_URI) {
-  dotenv.config({ path: ".env.example" });
-}
-
 function getEnv(name: string, fallback = "") {
   return process.env[name] ?? fallback;
 }
@@ -17,20 +13,21 @@ function getNumberEnv(name: string, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+const nodeEnv = getEnv("NODE_ENV", "development");
+const mongodbUri = getEnv("MONGODB_URI", getEnv("MONGO_URI"));
+
+if (nodeEnv === "production" && !mongodbUri) {
+  throw new Error("MONGODB_URI is required in production.");
+}
+
 export const env = {
-  nodeEnv: getEnv("NODE_ENV", "development"),
+  nodeEnv,
   port: getNumberEnv("PORT", 3000),
   siteUrl: getEnv("SITE_URL"),
   publicApiBaseUrl: getEnv("VITE_PUBLIC_API_BASE_URL", "/api"),
   mongodb: {
-    uri: getEnv("MONGODB_URI", getEnv("MONGO_URI")),
-    dbName: getEnv("MONGODB_DB_NAME", "watsons"),
-    liquorCollection: getEnv("MONGODB_LIQUOR_COLLECTION", "menus"),
-    menuDocumentTitle: getEnv("MONGODB_MENU_DOCUMENT_TITLE", "qrMenu")
-  },
-  menuApi: {
-    baseUrl: getEnv("MENU_API_BASE_URL"),
-    apiKey: getEnv("MENU_API_KEY")
+    uri: mongodbUri,
+    dbName: getEnv("MONGODB_DB_NAME", "watsons")
   }
 } as const;
 

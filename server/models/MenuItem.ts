@@ -32,6 +32,7 @@ const menuItemSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     slug: { type: String, required: true, index: true, trim: true },
     description: { type: String, default: "", trim: true },
+    displayDescription: { type: String, default: "", trim: true },
     pricing: { type: [pricingSchema], default: [] },
     tags: { type: [String], default: [] },
     imageUrl: { type: String, default: null },

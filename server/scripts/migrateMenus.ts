@@ -5,6 +5,7 @@ import { Menu } from "../models/Menu";
 import { MenuItem } from "../models/MenuItem";
 import { Restaurant } from "../models/Restaurant";
 import { cleanString, createSlug, parsePricing } from "../utils/menuDataHelpers";
+import { getMenuItemDisplayDescription } from "../utils/menuDisplayCopy";
 
 const oldMenuTitles = ["cocktailMenu", "beer_wineMenu", "qrMenu"] as const;
 
@@ -45,6 +46,7 @@ type OldMenuItem = {
   type?: unknown;
   name?: unknown;
   description?: unknown;
+  itemDescription?: unknown;
   price?: unknown;
 };
 
@@ -85,7 +87,7 @@ async function migrateMenus() {
     { slug: "watsons" },
     {
       $set: {
-        name: "Watsons",
+        name: "Watson's",
         slug: "watsons",
         address: {
           city: "Toronto",
@@ -95,7 +97,7 @@ async function migrateMenus() {
         isActive: true
       }
     },
-    { new: true, upsert: true, setDefaultsOnInsert: true }
+    { returnDocument: "after", upsert: true, setDefaultsOnInsert: true }
   );
 
   const oldMenus = await mongoose.connection
@@ -125,7 +127,7 @@ async function migrateMenus() {
           sortOrder: mapping.sortOrder
         }
       },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
+      { returnDocument: "after", upsert: true, setDefaultsOnInsert: true }
     );
     const categoryCache = new Map<string, Types.ObjectId>();
     const oldItems = Array.isArray(oldMenu.data) ? oldMenu.data : [];
@@ -133,6 +135,7 @@ async function migrateMenus() {
     for (const [index, oldItem] of oldItems.entries()) {
       const name = cleanString(oldItem.name);
       const description = cleanString(oldItem.description);
+      const itemDescription = cleanString(oldItem.itemDescription);
       const price = cleanString(oldItem.price);
       const pricing = parsePricing(price);
 
@@ -158,6 +161,14 @@ async function migrateMenus() {
 
       const categoryName = cleanString(oldItem.type) || mapping.fallbackCategory;
       const categorySlug = createSlug(categoryName);
+      const displayDescription =
+        itemDescription ||
+        getMenuItemDisplayDescription({
+          name,
+          categoryName,
+          region: inferRegion(description),
+          rawDescription: description
+        });
       let categoryId = categoryCache.get(categorySlug);
 
       if (!categoryId) {
@@ -172,7 +183,7 @@ async function migrateMenus() {
               sortOrder: categoryCache.size
             }
           },
-          { new: true, upsert: true, setDefaultsOnInsert: true }
+          { returnDocument: "after", upsert: true, setDefaultsOnInsert: true }
         );
 
         categoryId = category._id as Types.ObjectId;
@@ -185,6 +196,18 @@ async function migrateMenus() {
         description,
         price
       });
+      const existingItem = await MenuItem.findOne({
+        restaurantId: restaurant._id,
+        legacyMenuTitle: oldMenuTitle,
+        legacyId
+      })
+        .select({ displayDescription: 1 })
+        .lean();
+      const existingDisplayDescription = cleanString(
+        existingItem?.displayDescription
+      );
+      const nextDisplayDescription =
+        itemDescription || existingDisplayDescription || displayDescription;
 
       await MenuItem.updateOne(
         {
@@ -200,6 +223,7 @@ async function migrateMenus() {
             name,
             slug: createSlug(name),
             description,
+            displayDescription: nextDisplayDescription,
             pricing,
             tags: [],
             imageUrl: null,
@@ -218,6 +242,14 @@ async function migrateMenus() {
   }
 
   logMigrationStats(stats);
+}
+
+function inferRegion(description: string) {
+  if (!description || /[,.;:]/.test(description)) {
+    return undefined;
+  }
+
+  return description.split(/\s+/).length <= 3 ? description : undefined;
 }
 
 function getLegacyId(

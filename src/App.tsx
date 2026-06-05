@@ -1,9 +1,11 @@
-import { Mail, MapPin, X, Instagram } from "lucide-react";
+import { Mail, MapPin, X, Instagram, Phone } from "lucide-react";
 import { useState } from "react";
 import { MenuPage } from "./MenuPage";
 
-const backgroundImage =
-  "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=2200&q=85";
+const backgroundImage = "/hero-bg.jpg";
+const instagramUrl = "https://www.instagram.com/watsonstoronto/?hl=en";
+const reservationsUrl =
+  "https://www.opentable.ca/booking/restref/availability?rid=1213447&restref=1213447&lang=en-CA";
 
 export function App() {
   const [isContactOpen, setIsContactOpen] = useState(false);
@@ -23,7 +25,7 @@ export function App() {
         <main className="flex flex-1 flex-col items-center justify-center pb-14 pt-10 text-center sm:pb-10">
           <section className="w-full animate-rise space-y-4 sm:space-y-6">
             <p className="text-xs font-bold uppercase tracking-[0.36em] text-watsons-mist">
-              Toronto's Friendly Local Cocktail Bar
+              Toronto's Friendly Local Bar
             </p>
             <h1 className="mx-auto max-w-4xl font-serif text-4xl leading-[0.95] text-watsons-cream drop-shadow-2xl sm:text-6xl lg:text-7xl">
               Built by industry,
@@ -42,7 +44,7 @@ export function App() {
           >
             <PortalLink href="/menu" label="Menu" detail="Drinks & Food" />
             <PortalLink
-              href="https://www.opentable.com/"
+              href={reservationsUrl}
               label="Reservations"
               detail="Book a Table"
               featured
@@ -97,7 +99,7 @@ function Header() {
         Watson's
       </a>
       <a
-        href="https://www.instagram.com/"
+        href={instagramUrl}
         target="_blank"
         rel="noreferrer"
         className="hidden rounded-full p-2 text-watsons-cream/65 transition hover:text-watsons-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-gold sm:inline-flex"
@@ -151,7 +153,11 @@ function PortalLink({ href, label, detail, icon, featured, external }: PortalLin
 function Footer() {
   return (
     <footer className="flex shrink-0 flex-col items-center justify-between gap-2 pb-2 text-sm text-watsons-cream/50 sm:flex-row sm:pb-0">
-      <p>398 Richmond St W, Toronto, ON</p>
+      <p>
+        <a href="https://www.google.com/maps/dir//398+Richmond+St+W,+Toronto,+ON+M5V+3P1/@43.6436709,-79.3883802,16z/data=!4m7!4m6!1m1!4e2!1m2!1m1!1s0x882b34db08c95555:0x1e502465748c499b!3e0?gl=ca" target="_blank" rel="noopener noreferrer">
+          398 Richmond St W
+        </a>
+      </p>
       <p>Open Daily</p>
     </footer>
   );
@@ -165,9 +171,8 @@ type ContactModalProps = {
 function ContactModal({ isOpen, onClose }: ContactModalProps) {
   return (
     <div
-      className={`absolute inset-0 z-50 flex items-center justify-center bg-watsons-dark/80 px-4 backdrop-blur-xl transition duration-500 ${
-        isOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-5 opacity-0"
-      }`}
+      className={`absolute inset-0 z-50 flex items-center justify-center bg-watsons-dark/80 px-4 backdrop-blur-xl transition duration-500 ${isOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-5 opacity-0"
+        }`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="contact-title"
@@ -195,15 +200,19 @@ function ContactModal({ isOpen, onClose }: ContactModalProps) {
 
         <div className="mt-8 space-y-6 text-watsons-cream">
           <InfoBlock heading="Address">
-            388 Richmond St W
+            398 Richmond St W
             <br />
             Toronto, ON M5V 3P1
           </InfoBlock>
           <Divider />
           <InfoBlock heading="Hours">
-            Monday - Sunday
+            Monday - Saturday
             <br />
             5:00 PM - 2:00 AM
+            <br />
+            Sunday
+            <br />
+            7:00 PM - 2:00 AM
           </InfoBlock>
           <Divider />
           <div>
@@ -211,18 +220,21 @@ function ContactModal({ isOpen, onClose }: ContactModalProps) {
               Get in touch
             </h3>
             <div className="flex justify-center gap-5">
-              <IconLink href="https://www.instagram.com/" label="Instagram">
+              <IconLink href={instagramUrl} label="Instagram">
                 <Instagram className="h-6 w-6" />
               </IconLink>
-              <IconLink href="mailto:hello@watsons.example" label="Email">
+              <IconLink href="mailto:info@watsonstoronto.com" label="Email">
                 <Mail className="h-6 w-6" />
+              </IconLink>
+              <IconLink href="tel:+14165979792" label="Phone">
+                <Phone className="h-6 w-6" />
               </IconLink>
             </div>
           </div>
         </div>
 
         <a
-          href="https://maps.google.com/?q=388+Richmond+St+W,+Toronto"
+          href="https://maps.google.com/?q=398+Richmond+St+W,+Toronto"
           target="_blank"
           rel="noreferrer"
           className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-watsons-green bg-watsons-green px-5 py-4 text-sm font-bold uppercase tracking-[0.24em] text-watsons-cream transition hover:border-watsons-gold hover:bg-watsons-gold hover:text-watsons-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-gold"

@@ -6,34 +6,38 @@ type SeoEntry = {
   siteName: string;
   siteUrl: string;
   ogImage: string;
+  logoImage: string;
   jsonLd: JsonLd;
 };
 
-const siteUrl = "https://watsons.local";
-const ogImage = "/og/watsons-richmond.jpg";
+export const siteUrl = "https://watsonstoronto.com";
+export const siteName = "Watson's";
+export const siteDescription =
+  "Great cocktails, great food, great music, and an amazing atmosphere in downtown Toronto.";
+export const ogImage = `${siteUrl}/social-preview.png`;
+export const logoImage = `${siteUrl}/brand/watsons-logo.svg`;
 
 export const seoByPath: Record<string, SeoEntry> = {
   "/": {
-    title: "Watson's | Toronto's Friendly Local Cocktail Bar",
-    description:
-      "Watson's is a friendly local cocktail bar at 388 Richmond St W in Toronto, built by industry, for industry, and found by everyone else.",
-    siteName: "Watson's",
+    title: siteName,
+    description: siteDescription,
+    siteName,
     siteUrl,
     ogImage,
+    logoImage,
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "BarOrPub",
       name: "Watson's",
-      slogan: "Built by industry, for industry, found by everyone else.",
-      description:
-        "A friendly local cocktail bar serving drinks and food in downtown Toronto.",
+      description: siteDescription,
       url: siteUrl,
       image: ogImage,
-      telephone: "+1-416-000-0000",
+      logo: logoImage,
+      telephone: "+1-416-597-9792",
       priceRange: "$$",
       address: {
         "@type": "PostalAddress",
-        streetAddress: "388 Richmond St W",
+        streetAddress: "398 Richmond St W",
         addressLocality: "Toronto",
         addressRegion: "ON",
         postalCode: "M5V 3P1",
@@ -53,10 +57,15 @@ export const seoByPath: Record<string, SeoEntry> = {
             "Wednesday",
             "Thursday",
             "Friday",
-            "Saturday",
-            "Sunday"
+            "Saturday"
           ],
           opens: "17:00",
+          closes: "02:00"
+        },
+        {
+          "@type": "OpeningHoursSpecification",
+          dayOfWeek: ["Sunday"],
+          opens: "19:00",
           closes: "02:00"
         }
       ],
@@ -64,18 +73,17 @@ export const seoByPath: Record<string, SeoEntry> = {
     }
   },
   "/menu": {
-    title: "Watson's Menu | Cocktails, Food, and Spirits in Toronto",
-    description:
-      "Browse Watson's Toronto menu, including single malt scotch, whiskey, tequila, rum, gin, mezcal, cocktails, and bar food.",
-    siteName: "Watson's",
+    title: siteName,
+    description: siteDescription,
+    siteName,
     siteUrl,
     ogImage,
+    logoImage,
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "Menu",
       name: "Watson's Toronto Menu",
-      description:
-        "A searchable Watson's menu featuring cocktails, food, and a deep spirits catalog.",
+      description: siteDescription,
       url: `${siteUrl}/menu`,
       hasMenuSection: [
         {
