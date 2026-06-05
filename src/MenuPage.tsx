@@ -262,6 +262,20 @@ export function MenuPage() {
     setSelectedItemId(itemId);
   }
 
+  function MenuLoading() {
+    return (
+      <section className="mt-4 flex min-h-[16rem] items-center justify-center rounded-lg bg-[#10110f] px-6 py-12 text-center">
+        <div className="flex flex-col items-center gap-4">
+          <div
+            className="h-10 w-10 animate-spin rounded-full border-2 border-watsons-cream/15 border-t-watsons-gold"
+            aria-hidden="true"
+          />
+
+          <p className="sr-only">Loading menu</p>
+        </div>
+      </section>
+    );
+  }
   return (
     <div className="min-h-screen overflow-x-hidden bg-watsons-dark text-watsons-cream selection:bg-watsons-gold selection:text-watsons-dark lg:h-screen lg:overflow-hidden">
       <Header />
@@ -270,7 +284,7 @@ export function MenuPage() {
         <Hero />
 
         {isMenuLoading ? (
-          <MenuStatus title="Loading menu..." />
+          <MenuLoading />
         ) : menuError ? (
           <MenuStatus
             title="Menu unavailable"
@@ -866,7 +880,7 @@ function EmptyState() {
   );
 }
 
-function MenuStatus({ title, detail }: { title: string; detail?: string }) {
+function MenuStatus({ title, detail }: { title?: string; detail?: string }) {
   return (
     <section className="mt-4 rounded-lg bg-[#10110f] px-6 py-12 text-center">
       <p className="font-serif text-3xl text-watsons-cream">{title}</p>
