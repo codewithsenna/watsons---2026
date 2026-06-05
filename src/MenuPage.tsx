@@ -831,12 +831,6 @@ function SelectedPour({ item, compact = false }: SelectedPourProps) {
             </span>
           </div>
         </div>
-
-        {compact ? (
-          <span className="shrink-0 font-serif text-3xl leading-none text-watsons-gold">
-            {item.price}
-          </span>
-        ) : null}
       </div>
 
       <p
@@ -847,17 +841,6 @@ function SelectedPour({ item, compact = false }: SelectedPourProps) {
       >
         {getDisplayDescription(item)}
       </p>
-
-      {!compact ? (
-        <div className="mt-4 flex items-end justify-between border-t border-watsons-cream/5 pt-4 sm:mt-6 sm:pt-5">
-          <span className="text-xs font-bold uppercase tracking-[0.22em] text-watsons-cream/42">
-            Pour
-          </span>
-          <span className="font-serif text-3xl text-watsons-gold sm:text-4xl">
-            {item.price}
-          </span>
-        </div>
-      ) : null}
     </aside>
   );
 }
