@@ -765,11 +765,10 @@ function MenuCard({ item, isSelected, onSelect }: MenuCardProps) {
       data-result-card
       onClick={onSelect}
       aria-pressed={isSelected}
-      className={`group w-full rounded-lg border border-x-transparent border-t-transparent p-3 text-left transition duration-200 sm:p-4 lg:p-3 ${
-        isSelected
+      className={`group w-full rounded-lg border border-x-transparent border-t-transparent p-3 text-left transition duration-200 sm:p-4 lg:p-3 ${isSelected
           ? "border-watsons-gold bg-watsons-gold/10 shadow-[0_0_0_3px_rgba(200,155,66,0.12)]"
           : "border-b-watsons-cream/10 bg-watsons-card/58 hover:border-watsons-gold/42 hover:bg-watsons-card"
-      }`}
+        }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -779,7 +778,7 @@ function MenuCard({ item, isSelected, onSelect }: MenuCardProps) {
             </span>
           </div>
 
-          <h3 className="font-serif text-[1.35rem] leading-tight text-watsons-cream sm:text-2xl lg:text-[1.28rem]">
+          <h3 className="text-[1.05rem] font-semibold leading-snug tracking-[-0.01em] text-watsons-cream sm:text-lg lg:text-[1.05rem]">
             {item.name}
           </h3>
         </div>
@@ -818,7 +817,7 @@ function SelectedPour({ item, compact = false }: SelectedPourProps) {
       <div className="mt-1.5 flex items-start justify-between gap-3 sm:mt-2 lg:block">
         <div className="min-w-0">
           <h3
-           className={`font-serif leading-tight text-watsons-cream ${compact ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl"}`}
+            className={`font-serif leading-tight text-watsons-cream ${compact ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl"}`}
           >
             {item.name}
           </h3>
