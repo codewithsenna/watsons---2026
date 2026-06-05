@@ -318,19 +318,12 @@ export function MenuPage() {
             <div className="grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_23rem]">
               <section className="mt-1 flex min-w-0 flex-col overflow-hidden rounded-lg bg-[#0f100e] shadow-[0_18px_60px_rgba(0,0,0,0.2)] lg:mt-0 lg:max-h-none">
                 <div className="flex shrink-0 flex-col gap-1 px-3 pb-2 pt-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4 sm:px-5 sm:pt-5 lg:px-5 lg:py-3">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-watsons-gold sm:text-xs sm:tracking-[0.3em]">
-                      {activeCategory.eyebrow ?? "Menu"}
-                    </p>
-                    <h2 className="mt-1 font-serif text-2xl leading-none text-watsons-cream sm:text-4xl lg:text-3xl">
-                      {activeCategory.label}
-                    </h2>
-                  </div>
-
-                  {activeCategory.description ? (
-                    <p className="hidden max-w-xl text-sm leading-7 text-watsons-cream/58 xl:block">
-                      {activeCategory.description}
-                    </p>
+                  {!normalizedQuery ? (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-watsons-gold sm:text-xs sm:tracking-[0.3em]">
+                        {activeCategory.eyebrow ?? "Menu"}
+                      </p>
+                    </div>
                   ) : null}
                 </div>
 
