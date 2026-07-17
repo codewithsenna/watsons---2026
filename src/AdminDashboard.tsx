@@ -18,7 +18,8 @@ import {
   ShieldCheck,
   UserPlus,
   Users,
-  Wine
+  Wine,
+  X
 } from "lucide-react";
 import {
   useEffect,
@@ -842,7 +843,7 @@ function AdminWorkspace({
     event.preventDefault();
 
     if (!activeDraft) {
-      return;
+      return false;
     }
 
     setIsSaving(true);
@@ -852,7 +853,7 @@ function AdminWorkspace({
     try {
       if (editorMode === "edit") {
         if (!selectedItem) {
-          return;
+          return false;
         }
 
         const item = await adminFetch<AdminItem>(`/admin/items/${selectedItem.id}`, {
@@ -873,7 +874,7 @@ function AdminWorkspace({
         setSelectedCategoryId(item.categoryId);
         setStatus("Item saved.");
         await refreshAuditLogs();
-        return;
+        return true;
       }
 
       const item = await adminFetch<AdminItem>("/admin/items", {
@@ -890,8 +891,10 @@ function AdminWorkspace({
       setNewItemDraft(createEmptyItemDraft(item.categoryId));
       setStatus("Item added.");
       await refreshAuditLogs();
+      return true;
     } catch (caughtError) {
       setError(getErrorMessage(caughtError));
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -1187,9 +1190,51 @@ function MenuPanel({
   onNewCategoryDescriptionChange: (description: string) => void;
   onCategoryDraftChange: (draft: CategoryDraft) => void;
   onDraftChange: (draft: ItemDraft) => void;
-  onItemSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onItemSubmit: (event: FormEvent<HTMLFormElement>) => Promise<boolean>;
 }) {
   const [draggingCategoryId, setDraggingCategoryId] = useState("");
+  const [isMobileItemEditorOpen, setIsMobileItemEditorOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isMobileItemEditorOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsMobileItemEditorOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMobileItemEditorOpen]);
+
+  function handleItemSelect(item: AdminItem) {
+    onItemSelect(item);
+    setIsMobileItemEditorOpen(true);
+  }
+
+  function handleNewItem() {
+    onNewItem();
+    setIsMobileItemEditorOpen(true);
+  }
+
+  async function handleMobileItemSubmit(event: FormEvent<HTMLFormElement>) {
+    const didSave = await onItemSubmit(event);
+
+    if (didSave) {
+      setIsMobileItemEditorOpen(false);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -1199,7 +1244,7 @@ function MenuPanel({
         action={
           <button
             type="button"
-            onClick={onNewItem}
+            onClick={handleNewItem}
             className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-watsons-gold px-4 text-xs font-bold uppercase tracking-[0.16em] text-watsons-dark transition hover:bg-watsons-goldHover"
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
@@ -1411,7 +1456,7 @@ function MenuPanel({
               <button
                 key={item.id}
                 type="button"
-                onClick={() => onItemSelect(item)}
+                onClick={() => handleItemSelect(item)}
                 className={`rounded-md border p-4 text-left transition ${
                   selectedItemId === item.id
                     ? "border-watsons-gold bg-watsons-gold/10"
@@ -1440,15 +1485,95 @@ function MenuPanel({
           </div>
         </section>
 
-        <ItemEditor
-          categories={categories}
-          draft={draft}
-          disabled={isSaving}
-          mode={editorMode}
-          onDraftChange={onDraftChange}
-          onSubmit={onItemSubmit}
-        />
+        <div className="hidden xl:block">
+          <ItemEditor
+            categories={categories}
+            draft={draft}
+            disabled={isSaving}
+            mode={editorMode}
+            onDraftChange={onDraftChange}
+            onSubmit={(event) => void onItemSubmit(event)}
+          />
+        </div>
       </div>
+
+      <MobileItemEditorSheet
+        isOpen={isMobileItemEditorOpen}
+        categories={categories}
+        draft={draft}
+        disabled={isSaving}
+        mode={editorMode}
+        onClose={() => setIsMobileItemEditorOpen(false)}
+        onDraftChange={onDraftChange}
+        onSubmit={handleMobileItemSubmit}
+      />
+    </div>
+  );
+}
+
+function MobileItemEditorSheet({
+  isOpen,
+  categories,
+  draft,
+  disabled,
+  mode,
+  onClose,
+  onDraftChange,
+  onSubmit
+}: {
+  isOpen: boolean;
+  categories: AdminCategory[];
+  draft: ItemDraft | null;
+  disabled: boolean;
+  mode: "edit" | "new";
+  onClose: () => void;
+  onDraftChange: (draft: ItemDraft) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+}) {
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 xl:hidden" role="dialog" aria-modal="true">
+      <button
+        type="button"
+        aria-label="Close item editor"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+      />
+      <section className="absolute inset-x-0 bottom-0 max-h-[92dvh] overflow-hidden rounded-t-2xl border border-watsons-gold/25 bg-watsons-card shadow-2xl shadow-black">
+        <header className="flex items-center justify-between gap-3 border-b border-watsons-gold/15 px-4 py-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-watsons-gold">
+              {mode === "edit" ? "Edit Item" : "Add Item"}
+            </p>
+            <h2 className="truncate font-serif text-2xl text-watsons-cream">
+              {mode === "edit" ? draft?.name || "Selected Item" : "New Pour"}
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-watsons-cream/10 text-watsons-mist transition hover:border-watsons-gold/60 hover:text-watsons-gold"
+            aria-label="Close item editor"
+          >
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
+        </header>
+
+        <div className="admin-scroll max-h-[calc(92dvh-73px)] overflow-y-auto px-4 pb-4 pt-4">
+          <ItemEditor
+            categories={categories}
+            draft={draft}
+            disabled={disabled}
+            mode={mode}
+            surface="sheet"
+            onDraftChange={onDraftChange}
+            onSubmit={(event) => void onSubmit(event)}
+          />
+        </div>
+      </section>
     </div>
   );
 }
@@ -1458,6 +1583,7 @@ function ItemEditor({
   draft,
   disabled,
   mode,
+  surface = "panel",
   onDraftChange,
   onSubmit
 }: {
@@ -1465,12 +1591,21 @@ function ItemEditor({
   draft: ItemDraft | null;
   disabled: boolean;
   mode: "edit" | "new";
+  surface?: "panel" | "sheet";
   onDraftChange: (draft: ItemDraft) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  const isSheet = surface === "sheet";
+
   if (!draft) {
     return (
-      <section className="rounded-lg border border-watsons-gold/15 bg-watsons-card/70 p-5">
+      <section
+        className={
+          isSheet
+            ? "p-2"
+            : "rounded-lg border border-watsons-gold/15 bg-watsons-card/70 p-5"
+        }
+      >
         <h2 className="text-xs font-bold uppercase tracking-[0.24em] text-watsons-mist">
           Edit Item
         </h2>
@@ -1482,9 +1617,13 @@ function ItemEditor({
   return (
     <form
       onSubmit={onSubmit}
-      className="admin-scroll rounded-lg border border-watsons-gold/15 bg-watsons-card/70 p-4 xl:max-h-[calc(100dvh-8rem)] xl:overflow-y-auto"
+      className={
+        isSheet
+          ? "pb-[env(safe-area-inset-bottom)]"
+          : "admin-scroll rounded-lg border border-watsons-gold/15 bg-watsons-card/70 p-4 xl:max-h-[calc(100dvh-8rem)] xl:overflow-y-auto"
+      }
     >
-      <div className="mb-4">
+      <div className={isSheet ? "sr-only" : "mb-4"}>
         <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-watsons-gold">
           {mode === "edit" ? "Edit Item" : "Add Item"}
         </p>
@@ -1602,16 +1741,34 @@ function ItemEditor({
           Available on public menu
         </label>
 
-        <button
-          type="submit"
-          disabled={disabled}
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-watsons-gold text-xs font-bold uppercase tracking-[0.18em] text-watsons-dark transition hover:bg-watsons-goldHover disabled:opacity-45"
-        >
-          <Save className="h-4 w-4" aria-hidden="true" />
-          {mode === "edit" ? "Save Item" : "Add Item"}
-        </button>
+        {isSheet ? (
+          <div className="sticky bottom-0 -mx-4 mt-2 border-t border-watsons-gold/15 bg-watsons-card/95 px-4 py-3 backdrop-blur">
+            <ItemEditorSaveButton disabled={disabled} mode={mode} />
+          </div>
+        ) : (
+          <ItemEditorSaveButton disabled={disabled} mode={mode} />
+        )}
       </div>
     </form>
+  );
+}
+
+function ItemEditorSaveButton({
+  disabled,
+  mode
+}: {
+  disabled: boolean;
+  mode: "edit" | "new";
+}) {
+  return (
+    <button
+      type="submit"
+      disabled={disabled}
+      className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-watsons-gold text-xs font-bold uppercase tracking-[0.18em] text-watsons-dark transition hover:bg-watsons-goldHover disabled:opacity-45"
+    >
+      <Save className="h-4 w-4" aria-hidden="true" />
+      {mode === "edit" ? "Save Item" : "Add Item"}
+    </button>
   );
 }
 
