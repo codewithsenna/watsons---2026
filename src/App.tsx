@@ -100,7 +100,7 @@ export function App() {
               className="group mx-auto flex min-h-[42px] w-[78%] flex-col items-center justify-center rounded-lg border border-watsons-cream/10 bg-watsons-card/50 px-3 py-1 text-center backdrop-blur-md transition duration-300 hover:border-watsons-gold/60 hover:bg-watsons-card/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-watsons-gold sm:min-h-20 sm:w-full sm:px-4 sm:py-4"
             >
               <span className="block text-[8px] font-bold uppercase tracking-[0.12em] text-watsons-cream transition group-hover:text-watsons-gold sm:text-sm sm:tracking-[0.24em]">
-                Contact
+                Contact Us
               </span>
               <span className="mt-0.5 block text-[8px] font-medium text-watsons-cream/55 sm:mt-1 sm:text-xs">
                 Location & Hours
