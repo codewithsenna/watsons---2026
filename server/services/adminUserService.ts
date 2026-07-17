@@ -14,6 +14,7 @@ export type AdminPermissions = {
   canManageMenu: boolean;
   canManageUsers: boolean;
   canViewAuditTrail: boolean;
+  canViewAllAuditTrail: boolean;
 };
 
 export type SerializedAdminUser = {
@@ -245,7 +246,7 @@ export async function deactivateAdminUser(
 
   await recordAuditLog({
     actor,
-    action: "deactivate",
+    action: "delete",
     resourceType: "adminUser",
     resourceId: afterUser.id,
     resourceName: afterUser.email,
@@ -279,10 +280,14 @@ export function getPermissions(
   role: AdminRole,
   accessLevel: number
 ): AdminPermissions {
+  const canViewAllAuditTrail =
+    ["owner", "admin", "manager"].includes(role) && accessLevel >= 70;
+
   return {
     canManageMenu: accessLevel >= 50 && role !== "viewer",
     canManageUsers: ["owner", "admin"].includes(role) && accessLevel >= 90,
-    canViewAuditTrail: ["owner", "admin"].includes(role) && accessLevel >= 90
+    canViewAuditTrail: true,
+    canViewAllAuditTrail
   };
 }
 

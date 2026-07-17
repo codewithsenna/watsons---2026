@@ -4,3 +4,19 @@
 
 ◇ injected env (17) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
 Watson's is listening on port 3000.
+[2m7:37:13 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mserver/services/adminUserService.ts[22m
+[2m7:37:13 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mserver/services/adminUserService.ts[22m
+[2m7:37:17 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mserver/services/adminAuditService.ts[22m
+[2m7:37:21 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mserver/services/adminAuthService.ts[22m
+[2m7:37:48 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mserver/services/adminAuthService.ts[22m
+[2m7:38:14 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mserver/services/adminMenuService.ts[22m
+[2m7:38:17 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mserver/routes/adminRoutes.ts[22m
+[2m7:38:30 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/AdminDashboard.tsx, /src/styles.css[22m
+[2m7:38:46 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/AdminDashboard.tsx, /src/styles.css[22m
+[2m7:39:11 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/AdminDashboard.tsx, /src/styles.css[22m
+[2m7:39:26 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/AdminDashboard.tsx, /src/styles.css[22m
+[2m7:39:53 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/AdminDashboard.tsx, /src/styles.css[22m
+[2m7:40:20 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/AdminDashboard.tsx, /src/styles.css[22m
+[2m7:40:39 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/AdminDashboard.tsx, /src/styles.css[22m
+[2m7:40:51 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/AdminDashboard.tsx, /src/styles.css[22m
+[2m7:41:07 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/AdminDashboard.tsx, /src/styles.css[22m

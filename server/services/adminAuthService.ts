@@ -4,6 +4,7 @@ import { env } from "../env";
 import { AdminOtp } from "../models/AdminOtp";
 import { AdminSession } from "../models/AdminSession";
 import { sendAdminOtpEmail } from "./adminEmailService";
+import { recordAuditLog } from "./adminAuditService";
 import { httpError } from "../utils/httpError";
 import {
   createBootstrapAdmin,
@@ -94,7 +95,8 @@ export async function verifyAdminOtp(
     Date.now() + env.admin.sessionMaxAgeSeconds * 1000
   );
 
-  await AdminSession.create({
+  const serializedUser = serializeAdminUser(adminUser);
+  const session = await AdminSession.create({
     email,
     userId: adminUser._id,
     tokenHash: hashSecret(sessionToken),
@@ -104,10 +106,24 @@ export async function verifyAdminOtp(
     lastSeenAt: new Date()
   });
 
+  await recordAuditLog({
+    actor: serializedUser,
+    action: "signIn",
+    resourceType: "adminSession",
+    resourceId: session._id.toString(),
+    resourceName: serializedUser.email,
+    before: null,
+    after: {
+      email: serializedUser.email,
+      role: serializedUser.role,
+      signedInAt: new Date().toISOString()
+    }
+  });
+
   return {
     token: sessionToken,
     user: {
-      ...serializeAdminUser(adminUser),
+      ...serializedUser,
       expiresAt: expiresAt.toISOString()
     }
   };

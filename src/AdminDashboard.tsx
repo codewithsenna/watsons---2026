@@ -16,6 +16,7 @@ import {
   Save,
   Search,
   ShieldCheck,
+  Trash2,
   UserPlus,
   Users,
   Wine,
@@ -46,6 +47,7 @@ type AdminPermissions = {
   canManageMenu: boolean;
   canManageUsers: boolean;
   canViewAuditTrail: boolean;
+  canViewAllAuditTrail: boolean;
 };
 
 type AdminUser = {
@@ -124,7 +126,10 @@ type AdminAuditResponse = {
   logs: AdminAuditLog[];
   hasMore: boolean;
   nextCursor: string;
+  scope: AdminAuditScope;
 };
+
+type AdminAuditScope = "self" | "others" | "all";
 
 type ItemDraft = {
   categoryId: string;
@@ -523,6 +528,9 @@ function AdminWorkspace({
   const [auditNextCursor, setAuditNextCursor] = useState("");
   const [auditHasMore, setAuditHasMore] = useState(false);
   const [isAuditLoading, setIsAuditLoading] = useState(false);
+  const [auditScope, setAuditScope] = useState<AdminAuditScope>(
+    user.permissions.canViewAllAuditTrail ? "all" : "self"
+  );
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [selectedItemId, setSelectedItemId] = useState("");
   const [query, setQuery] = useState("");
@@ -551,11 +559,11 @@ function AdminWorkspace({
     if (
       activePanel === "audit" &&
       user.permissions.canViewAuditTrail &&
-      auditLogs.length === 0
+      true
     ) {
       void loadAuditLogs({ reset: true });
     }
-  }, [activePanel, user.permissions.canViewAuditTrail]);
+  }, [activePanel, auditScope, user.permissions.canViewAuditTrail]);
 
   useEffect(() => {
     if (!menuData || selectedCategoryId) {
@@ -664,7 +672,7 @@ function AdminWorkspace({
     }
 
     const cursor = reset ? "" : auditNextCursor;
-    const query = new URLSearchParams({ limit: "20" });
+    const query = new URLSearchParams({ limit: "20", scope: auditScope });
 
     if (cursor) {
       query.set("cursor", cursor);
@@ -686,6 +694,7 @@ function AdminWorkspace({
       );
       setAuditNextCursor(result.nextCursor);
       setAuditHasMore(result.hasMore);
+      setAuditScope(result.scope);
     }
 
     setIsAuditLoading(false);
@@ -767,6 +776,59 @@ function AdminWorkspace({
           : current
       );
       setStatus("Category saved.");
+      await refreshAuditLogs();
+    } catch (caughtError) {
+      setError(getErrorMessage(caughtError));
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function deleteCategory() {
+    if (!menuData || !selectedCategory) {
+      return;
+    }
+
+    const itemCount = menuData.items.filter(
+      (item) => item.categoryId === selectedCategory.id
+    ).length;
+
+    if (itemCount > 0) {
+      setError("Delete or move all items in this category before deleting it.");
+      return;
+    }
+
+    if (!window.confirm(`Delete category "${selectedCategory.name}"?`)) {
+      return;
+    }
+
+    setIsSaving(true);
+    setError("");
+    setStatus("");
+
+    try {
+      await adminFetch<AdminCategory>(`/admin/categories/${selectedCategory.id}`, {
+        method: "DELETE"
+      });
+
+      const remainingCategories = menuData.categories.filter(
+        (category) => category.id !== selectedCategory.id
+      );
+      const nextCategory = remainingCategories[0];
+
+      setMenuData((current) => {
+        if (!current) {
+          return current;
+        }
+
+        return { ...current, categories: remainingCategories };
+      });
+      setSelectedCategoryId(nextCategory?.id ?? "");
+      setNewItemDraft((draft) => ({
+        ...draft,
+        categoryId: nextCategory?.id ?? ""
+      }));
+      setStatus("Category deleted.");
       await refreshAuditLogs();
     } catch (caughtError) {
       setError(getErrorMessage(caughtError));
@@ -890,6 +952,46 @@ function AdminWorkspace({
       setEditorMode("edit");
       setNewItemDraft(createEmptyItemDraft(item.categoryId));
       setStatus("Item added.");
+      await refreshAuditLogs();
+      return true;
+    } catch (caughtError) {
+      setError(getErrorMessage(caughtError));
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function deleteItem() {
+    if (!selectedItem) {
+      return false;
+    }
+
+    if (!window.confirm(`Delete menu item "${selectedItem.name}"?`)) {
+      return false;
+    }
+
+    setIsSaving(true);
+    setError("");
+    setStatus("");
+
+    try {
+      await adminFetch<AdminItem>(`/admin/items/${selectedItem.id}`, {
+        method: "DELETE"
+      });
+
+      setMenuData((current) =>
+        current
+          ? {
+              ...current,
+              items: current.items.filter((item) => item.id !== selectedItem.id)
+            }
+          : current
+      );
+      setSelectedItemId("");
+      setEditorMode("new");
+      setNewItemDraft(createEmptyItemDraft(selectedItem.categoryId));
+      setStatus("Item deleted.");
       await refreshAuditLogs();
       return true;
     } catch (caughtError) {
@@ -1025,6 +1127,7 @@ function AdminWorkspace({
               }}
               onCategorySubmit={createCategory}
               onCategorySave={saveCategory}
+              onCategoryDelete={() => void deleteCategory()}
               onCategoryReorder={(draggedCategoryId, targetCategoryId) =>
                 void reorderCategories(draggedCategoryId, targetCategoryId)
               }
@@ -1039,6 +1142,7 @@ function AdminWorkspace({
                 }
               }}
               onItemSubmit={saveItem}
+              onItemDelete={deleteItem}
             />
           ) : null}
 
@@ -1078,6 +1182,14 @@ function AdminWorkspace({
               logs={auditLogs}
               hasMore={auditHasMore}
               isLoading={isAuditLoading}
+              scope={auditScope}
+              canViewAll={user.permissions.canViewAllAuditTrail}
+              onScopeChange={(scope) => {
+                setAuditLogs([]);
+                setAuditNextCursor("");
+                setAuditHasMore(false);
+                setAuditScope(scope);
+              }}
               onRefresh={() => void refreshAuditLogs()}
               onLoadMore={() => void loadAuditLogs()}
             />
@@ -1159,12 +1271,14 @@ function MenuPanel({
   onNewItem,
   onCategorySubmit,
   onCategorySave,
+  onCategoryDelete,
   onCategoryReorder,
   onNewCategoryNameChange,
   onNewCategoryDescriptionChange,
   onCategoryDraftChange,
   onDraftChange,
-  onItemSubmit
+  onItemSubmit,
+  onItemDelete
 }: {
   categories: AdminCategory[];
   filteredItems: AdminItem[];
@@ -1185,15 +1299,20 @@ function MenuPanel({
   onNewItem: () => void;
   onCategorySubmit: (event: FormEvent<HTMLFormElement>) => void;
   onCategorySave: (event: FormEvent<HTMLFormElement>) => void;
+  onCategoryDelete: () => void;
   onCategoryReorder: (draggedCategoryId: string, targetCategoryId: string) => void;
   onNewCategoryNameChange: (name: string) => void;
   onNewCategoryDescriptionChange: (description: string) => void;
   onCategoryDraftChange: (draft: CategoryDraft) => void;
   onDraftChange: (draft: ItemDraft) => void;
   onItemSubmit: (event: FormEvent<HTMLFormElement>) => Promise<boolean>;
+  onItemDelete: () => Promise<boolean>;
 }) {
   const [draggingCategoryId, setDraggingCategoryId] = useState("");
   const [isMobileItemEditorOpen, setIsMobileItemEditorOpen] = useState(false);
+  const selectedCategoryItemCount = selectedCategoryId
+    ? itemCountsByCategory.get(selectedCategoryId) ?? 0
+    : 0;
 
   useEffect(() => {
     if (!isMobileItemEditorOpen) {
@@ -1314,8 +1433,8 @@ function MenuPanel({
                 />
                 <p className="rounded-md border border-watsons-cream/10 bg-watsons-dark px-3 py-3 text-xs leading-5 text-watsons-mist">
                   Drag categories below to change display order.
-                </p>
-                <label className="flex items-center gap-3 rounded-md border border-watsons-cream/10 bg-watsons-dark px-3 py-3 text-sm font-bold text-watsons-cream">
+            </p>
+            <label className="flex items-center gap-3 rounded-md border border-watsons-cream/10 bg-watsons-dark px-3 py-3 text-sm font-bold text-watsons-cream">
                   <input
                     type="checkbox"
                     checked={categoryDraft.isActive}
@@ -1337,6 +1456,26 @@ function MenuPanel({
                   <Save className="h-4 w-4" aria-hidden="true" />
                   Save
                 </button>
+                <button
+                  type="button"
+                  disabled={isSaving || selectedCategoryItemCount > 0}
+                  onClick={onCategoryDelete}
+                  title={
+                    selectedCategoryItemCount > 0
+                      ? "Delete or move this category's items first."
+                      : "Delete category"
+                  }
+                  className="flex h-10 w-full items-center justify-center gap-2 rounded-md border border-red-300/30 text-xs font-bold uppercase tracking-[0.16em] text-red-100 transition hover:bg-red-950/30 disabled:cursor-not-allowed disabled:opacity-35"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  Delete
+                </button>
+                {selectedCategoryItemCount > 0 ? (
+                  <p className="text-xs leading-5 text-watsons-mist">
+                    Delete or move {selectedCategoryItemCount} item
+                    {selectedCategoryItemCount === 1 ? "" : "s"} before deleting.
+                  </p>
+                ) : null}
               </div>
             </form>
           ) : null}
@@ -1493,6 +1632,7 @@ function MenuPanel({
             mode={editorMode}
             onDraftChange={onDraftChange}
             onSubmit={(event) => void onItemSubmit(event)}
+            onDelete={() => void onItemDelete()}
           />
         </div>
       </div>
@@ -1506,6 +1646,13 @@ function MenuPanel({
         onClose={() => setIsMobileItemEditorOpen(false)}
         onDraftChange={onDraftChange}
         onSubmit={handleMobileItemSubmit}
+        onDelete={async () => {
+          const didDelete = await onItemDelete();
+
+          if (didDelete) {
+            setIsMobileItemEditorOpen(false);
+          }
+        }}
       />
     </div>
   );
@@ -1519,7 +1666,8 @@ function MobileItemEditorSheet({
   mode,
   onClose,
   onDraftChange,
-  onSubmit
+  onSubmit,
+  onDelete
 }: {
   isOpen: boolean;
   categories: AdminCategory[];
@@ -1529,6 +1677,7 @@ function MobileItemEditorSheet({
   onClose: () => void;
   onDraftChange: (draft: ItemDraft) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+  onDelete: () => Promise<void>;
 }) {
   if (!isOpen) {
     return null;
@@ -1571,6 +1720,7 @@ function MobileItemEditorSheet({
             surface="sheet"
             onDraftChange={onDraftChange}
             onSubmit={(event) => void onSubmit(event)}
+            onDelete={() => void onDelete()}
           />
         </div>
       </section>
@@ -1585,7 +1735,8 @@ function ItemEditor({
   mode,
   surface = "panel",
   onDraftChange,
-  onSubmit
+  onSubmit,
+  onDelete
 }: {
   categories: AdminCategory[];
   draft: ItemDraft | null;
@@ -1594,6 +1745,7 @@ function ItemEditor({
   surface?: "panel" | "sheet";
   onDraftChange: (draft: ItemDraft) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onDelete?: () => void;
 }) {
   const isSheet = surface === "sheet";
 
@@ -1743,32 +1895,55 @@ function ItemEditor({
 
         {isSheet ? (
           <div className="sticky bottom-0 -mx-4 mt-2 border-t border-watsons-gold/15 bg-watsons-card/95 px-4 py-3 backdrop-blur">
-            <ItemEditorSaveButton disabled={disabled} mode={mode} />
+            <ItemEditorActions
+              disabled={disabled}
+              mode={mode}
+              onDelete={onDelete}
+            />
           </div>
         ) : (
-          <ItemEditorSaveButton disabled={disabled} mode={mode} />
+          <ItemEditorActions
+            disabled={disabled}
+            mode={mode}
+            onDelete={onDelete}
+          />
         )}
       </div>
     </form>
   );
 }
 
-function ItemEditorSaveButton({
+function ItemEditorActions({
   disabled,
-  mode
+  mode,
+  onDelete
 }: {
   disabled: boolean;
   mode: "edit" | "new";
+  onDelete?: () => void;
 }) {
   return (
-    <button
-      type="submit"
-      disabled={disabled}
-      className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-watsons-gold text-xs font-bold uppercase tracking-[0.18em] text-watsons-dark transition hover:bg-watsons-goldHover disabled:opacity-45"
-    >
-      <Save className="h-4 w-4" aria-hidden="true" />
-      {mode === "edit" ? "Save Item" : "Add Item"}
-    </button>
+    <div className={mode === "edit" && onDelete ? "grid grid-cols-[0.85fr_1.15fr] gap-2" : ""}>
+      {mode === "edit" && onDelete ? (
+        <button
+          type="button"
+          onClick={onDelete}
+          disabled={disabled}
+          className="flex h-11 items-center justify-center gap-2 rounded-md border border-red-300/30 px-3 text-xs font-bold uppercase tracking-[0.14em] text-red-100 transition hover:bg-red-950/30 disabled:opacity-45"
+        >
+          <Trash2 className="h-4 w-4" aria-hidden="true" />
+          Delete
+        </button>
+      ) : null}
+      <button
+        type="submit"
+        disabled={disabled}
+        className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-watsons-gold text-xs font-bold uppercase tracking-[0.18em] text-watsons-dark transition hover:bg-watsons-goldHover disabled:opacity-45"
+      >
+        <Save className="h-4 w-4" aria-hidden="true" />
+        {mode === "edit" ? "Save Item" : "Add Item"}
+      </button>
+    </div>
   );
 }
 
@@ -1973,15 +2148,29 @@ function AuditPanel({
   logs,
   hasMore,
   isLoading,
+  scope,
+  canViewAll,
+  onScopeChange,
   onRefresh,
   onLoadMore
 }: {
   logs: AdminAuditLog[];
   hasMore: boolean;
   isLoading: boolean;
+  scope: AdminAuditScope;
+  canViewAll: boolean;
+  onScopeChange: (scope: AdminAuditScope) => void;
   onRefresh: () => void;
   onLoadMore: () => void;
 }) {
+  const scopeOptions: Array<{ value: AdminAuditScope; label: string }> = canViewAll
+    ? [
+        { value: "all", label: "All Activity" },
+        { value: "self", label: "My Activity" },
+        { value: "others", label: "Others" }
+      ]
+    : [{ value: "self", label: "My Activity" }];
+
   return (
     <PanelShell
       eyebrow="Audit"
@@ -1998,6 +2187,24 @@ function AuditPanel({
         </button>
       }
     >
+      <div className="mb-4 flex flex-wrap gap-2 rounded-lg border border-watsons-gold/15 bg-watsons-card/70 p-2">
+        {scopeOptions.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onScopeChange(option.value)}
+            disabled={isLoading && scope === option.value}
+            className={`h-10 rounded-md px-4 text-xs font-bold uppercase tracking-[0.16em] transition ${
+              scope === option.value
+                ? "bg-watsons-gold text-watsons-dark"
+                : "border border-watsons-cream/10 text-watsons-mist hover:border-watsons-gold/45 hover:text-watsons-gold"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
       <div className="grid gap-3">
         {logs.length ? (
           logs.map((log) => (
@@ -2196,7 +2403,7 @@ function UsersPanel({
           existingUser.id === updatedUser.id ? updatedUser : existingUser
         )
       );
-      onStatus("User disabled.");
+      onStatus("User deleted.");
       onAuditRefresh();
     } catch (caughtError) {
       onError(getErrorMessage(caughtError));
@@ -2311,7 +2518,7 @@ function UsersPanel({
                 disabled={isSaving || user.id === currentUser.id}
                 className="flex h-11 items-center justify-center rounded-md border border-red-300/30 px-3 text-xs font-bold uppercase tracking-[0.14em] text-red-100 transition hover:bg-red-950/30 disabled:opacity-35"
               >
-                Delete
+                Delete User
               </button>
             </div>
           </div>

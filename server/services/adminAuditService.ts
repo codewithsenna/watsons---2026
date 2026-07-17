@@ -24,6 +24,7 @@ type AuditChange = {
 type AuditListOptions = {
   cursor?: unknown;
   limit?: unknown;
+  scope?: unknown;
 };
 
 export async function listAuditLogs(
@@ -34,8 +35,8 @@ export async function listAuditLogs(
   assertCanViewAuditTrail(actor);
 
   const limit = normalizeLimit(options.limit);
-  const cursorFilter = parseCursor(options.cursor);
-  const logs = await AdminAuditLog.find(cursorFilter)
+  const queryFilter = buildAuditQuery(actor, options.scope, options.cursor);
+  const logs = await AdminAuditLog.find(queryFilter)
     .sort({ createdAt: -1, _id: -1 })
     .limit(limit + 1)
     .lean();
@@ -46,7 +47,8 @@ export async function listAuditLogs(
   return {
     logs: visibleLogs.map(serializeAuditLog),
     hasMore,
-    nextCursor: hasMore && lastLog ? createCursor(lastLog) : ""
+    nextCursor: hasMore && lastLog ? createCursor(lastLog) : "",
+    scope: normalizeScope(options.scope, canViewAllAuditTrail(actor))
   };
 }
 
@@ -74,12 +76,58 @@ export async function recordAuditLog(input: AuditInput) {
 
 export function assertCanViewAuditTrail(user: SerializedAdminUser) {
   if (!canViewAuditTrail(user)) {
-    throw httpError(403, "Only owners and admins can view the audit trail.");
+    throw httpError(403, "You do not have access to view the audit trail.");
   }
 }
 
 export function canViewAuditTrail(user: SerializedAdminUser) {
-  return ["owner", "admin"].includes(user.role) && user.accessLevel >= 90;
+  return user.permissions.canViewAuditTrail;
+}
+
+function canViewAllAuditTrail(user: SerializedAdminUser) {
+  return user.permissions.canViewAllAuditTrail;
+}
+
+function buildAuditQuery(
+  actor: SerializedAdminUser,
+  scopeValue: unknown,
+  cursorValue: unknown
+) {
+  const filters: Array<Record<string, unknown>> = [];
+  const scope = normalizeScope(scopeValue, canViewAllAuditTrail(actor));
+  const cursorFilter = parseCursor(cursorValue);
+
+  if (scope === "self") {
+    filters.push({ actorId: actor.id });
+  }
+
+  if (scope === "others") {
+    filters.push({ actorId: { $ne: actor.id } });
+  }
+
+  if (Object.keys(cursorFilter).length) {
+    filters.push(cursorFilter);
+  }
+
+  if (!filters.length) {
+    return {};
+  }
+
+  return filters.length === 1 ? filters[0] : { $and: filters };
+}
+
+function normalizeScope(value: unknown, canViewAll: boolean) {
+  const scope = cleanString(value);
+
+  if (!canViewAll) {
+    return "self";
+  }
+
+  if (scope === "self" || scope === "others" || scope === "all") {
+    return scope;
+  }
+
+  return "all";
 }
 
 function buildChanges(before: unknown, after: unknown, prefix = ""): AuditChange[] {

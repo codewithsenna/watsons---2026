@@ -16,6 +16,8 @@ import {
 import {
   createAdminCategory,
   createAdminItem,
+  deleteAdminCategory,
+  deleteAdminItem,
   getAdminMenu,
   updateAdminCategory,
   updateAdminItem
@@ -166,7 +168,8 @@ adminRoutes.get("/audit-logs", async (request: AdminRequest, response, next) => 
     response.json(
       await listAuditLogs(requireRequestUser(request), {
         cursor: request.query.cursor,
-        limit: request.query.limit
+        limit: request.query.limit,
+        scope: request.query.scope
       })
     );
   } catch (error) {
@@ -232,6 +235,17 @@ adminRoutes.patch("/categories/:categoryId", async (request: AdminRequest, respo
   }
 });
 
+adminRoutes.delete("/categories/:categoryId", async (request: AdminRequest, response, next) => {
+  try {
+    const user = requireRequestUser(request);
+
+    assertCanManageMenu(user);
+    response.json(await deleteAdminCategory(request.params.categoryId, user));
+  } catch (error) {
+    next(error);
+  }
+});
+
 adminRoutes.post("/items", async (request: AdminRequest, response, next) => {
   try {
     const user = requireRequestUser(request);
@@ -251,6 +265,17 @@ adminRoutes.patch("/items/:itemId", async (request: AdminRequest, response, next
     response.json(
       await updateAdminItem(request.params.itemId, request.body ?? {}, user)
     );
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRoutes.delete("/items/:itemId", async (request: AdminRequest, response, next) => {
+  try {
+    const user = requireRequestUser(request);
+
+    assertCanManageMenu(user);
+    response.json(await deleteAdminItem(request.params.itemId, user));
   } catch (error) {
     next(error);
   }

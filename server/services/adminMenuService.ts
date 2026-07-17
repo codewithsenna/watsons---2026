@@ -169,6 +169,46 @@ export async function updateAdminCategory(
   return afterCategory;
 }
 
+export async function deleteAdminCategory(
+  categoryId: string,
+  actor: SerializedAdminUser
+) {
+  const { menu } = await getAdminMenuContext();
+  const category = await Category.findOne({
+    _id: requireObjectId(categoryId, "Category"),
+    menuId: menu._id
+  });
+
+  if (!category) {
+    throw httpError(404, "Category not found.");
+  }
+
+  const itemCount = await MenuItem.countDocuments({
+    menuId: menu._id,
+    categoryId: category._id
+  });
+
+  if (itemCount > 0) {
+    throw httpError(409, "Delete or move menu items before deleting this category.");
+  }
+
+  const beforeCategory = serializeAdminCategory(category);
+
+  await category.deleteOne();
+
+  await recordAuditLog({
+    actor,
+    action: "delete",
+    resourceType: "category",
+    resourceId: beforeCategory.id,
+    resourceName: beforeCategory.name,
+    before: beforeCategory,
+    after: null
+  });
+
+  return beforeCategory;
+}
+
 export async function createAdminItem(
   input: ItemInput,
   actor: SerializedAdminUser
@@ -277,6 +317,38 @@ export async function updateAdminItem(
   });
 
   return afterItem;
+}
+
+export async function deleteAdminItem(
+  itemId: string,
+  actor: SerializedAdminUser
+) {
+  const { restaurant, menu } = await getAdminMenuContext();
+  const item = await MenuItem.findOne({
+    _id: requireObjectId(itemId, "Item"),
+    restaurantId: restaurant._id,
+    menuId: menu._id
+  });
+
+  if (!item) {
+    throw httpError(404, "Item not found.");
+  }
+
+  const beforeItem = serializeAdminItem(item);
+
+  await item.deleteOne();
+
+  await recordAuditLog({
+    actor,
+    action: "delete",
+    resourceType: "menuItem",
+    resourceId: beforeItem.id,
+    resourceName: beforeItem.name,
+    before: beforeItem,
+    after: null
+  });
+
+  return beforeItem;
 }
 
 async function getAdminMenuContext() {
