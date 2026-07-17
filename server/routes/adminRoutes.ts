@@ -10,6 +10,10 @@ import {
   type AdminSessionUser
 } from "../services/adminAuthService";
 import {
+  listAuditLogs,
+  recordAuditLog
+} from "../services/adminAuditService";
+import {
   createAdminCategory,
   createAdminItem,
   getAdminMenu,
@@ -24,6 +28,10 @@ import {
   listAdminUsers,
   updateAdminUser
 } from "../services/adminUserService";
+import {
+  getSiteSettings,
+  updateSiteSettings
+} from "../services/siteSettingsService";
 import { httpError } from "../utils/httpError";
 
 type AdminRequest = express.Request & {
@@ -112,10 +120,55 @@ adminRoutes.get("/menu", async (_request, response, next) => {
   }
 });
 
+adminRoutes.get("/settings", async (_request, response, next) => {
+  try {
+    response.json(await getSiteSettings());
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRoutes.patch("/settings", async (request: AdminRequest, response, next) => {
+  try {
+    const user = requireRequestUser(request);
+
+    assertCanManageMenu(user);
+    const beforeSettings = await getSiteSettings();
+    const settings = await updateSiteSettings(request.body ?? {}, user.email);
+
+    await recordAuditLog({
+      actor: user,
+      action: "update",
+      resourceType: "siteSettings",
+      resourceId: "watsons",
+      resourceName: "Watson's site settings",
+      before: beforeSettings,
+      after: settings
+    });
+
+    response.json(settings);
+  } catch (error) {
+    next(error);
+  }
+});
+
 adminRoutes.get("/users", async (request: AdminRequest, response, next) => {
   try {
     assertCanManageUsers(requireRequestUser(request));
     response.json({ users: await listAdminUsers() });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRoutes.get("/audit-logs", async (request: AdminRequest, response, next) => {
+  try {
+    response.json(
+      await listAuditLogs(requireRequestUser(request), {
+        cursor: request.query.cursor,
+        limit: request.query.limit
+      })
+    );
   } catch (error) {
     next(error);
   }
@@ -157,8 +210,10 @@ adminRoutes.delete("/users/:userId", async (request: AdminRequest, response, nex
 
 adminRoutes.post("/categories", async (request: AdminRequest, response, next) => {
   try {
-    assertCanManageMenu(requireRequestUser(request));
-    response.status(201).json(await createAdminCategory(request.body ?? {}));
+    const user = requireRequestUser(request);
+
+    assertCanManageMenu(user);
+    response.status(201).json(await createAdminCategory(request.body ?? {}, user));
   } catch (error) {
     next(error);
   }
@@ -166,9 +221,11 @@ adminRoutes.post("/categories", async (request: AdminRequest, response, next) =>
 
 adminRoutes.patch("/categories/:categoryId", async (request: AdminRequest, response, next) => {
   try {
-    assertCanManageMenu(requireRequestUser(request));
+    const user = requireRequestUser(request);
+
+    assertCanManageMenu(user);
     response.json(
-      await updateAdminCategory(request.params.categoryId, request.body ?? {})
+      await updateAdminCategory(request.params.categoryId, request.body ?? {}, user)
     );
   } catch (error) {
     next(error);
@@ -177,8 +234,10 @@ adminRoutes.patch("/categories/:categoryId", async (request: AdminRequest, respo
 
 adminRoutes.post("/items", async (request: AdminRequest, response, next) => {
   try {
-    assertCanManageMenu(requireRequestUser(request));
-    response.status(201).json(await createAdminItem(request.body ?? {}));
+    const user = requireRequestUser(request);
+
+    assertCanManageMenu(user);
+    response.status(201).json(await createAdminItem(request.body ?? {}, user));
   } catch (error) {
     next(error);
   }
@@ -186,8 +245,12 @@ adminRoutes.post("/items", async (request: AdminRequest, response, next) => {
 
 adminRoutes.patch("/items/:itemId", async (request: AdminRequest, response, next) => {
   try {
-    assertCanManageMenu(requireRequestUser(request));
-    response.json(await updateAdminItem(request.params.itemId, request.body ?? {}));
+    const user = requireRequestUser(request);
+
+    assertCanManageMenu(user);
+    response.json(
+      await updateAdminItem(request.params.itemId, request.body ?? {}, user)
+    );
   } catch (error) {
     next(error);
   }

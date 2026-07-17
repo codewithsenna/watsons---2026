@@ -1,0 +1,18 @@
+HttpError: Sign in to continue.
+    at httpError (C:\Users\sinam\OneDrive\Documents\watsons\server\utils\httpError.ts:12:10)
+    at requireAdmin (C:\Users\sinam\OneDrive\Documents\watsons\server\routes\adminRoutes.ts:228:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  status: 401
+}
+HttpError: Sign in to continue.
+    at httpError (C:\Users\sinam\OneDrive\Documents\watsons\server\utils\httpError.ts:12:10)
+    at requireAdmin (C:\Users\sinam\OneDrive\Documents\watsons\server\routes\adminRoutes.ts:228:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  status: 401
+}
+HttpError: Sign in to continue.
+    at httpError (C:\Users\sinam\OneDrive\Documents\watsons\server\utils\httpError.ts:12:10)
+    at requireAdmin (C:\Users\sinam\OneDrive\Documents\watsons\server\routes\adminRoutes.ts:228:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  status: 401
+}

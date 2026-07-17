@@ -1,16 +1,55 @@
 import { Mail, MapPin, X, Instagram, Phone } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminDashboard } from "./AdminDashboard";
 import { MenuPage } from "./MenuPage";
+import {
+  applySiteTheme,
+  defaultSiteSettings,
+  formatHourRange,
+  type SiteSettings
+} from "./siteSettings";
 
 const backgroundImage = "/hero-bg.jpg";
+const apiBaseUrl = (import.meta.env.VITE_PUBLIC_API_BASE_URL ?? "/api").replace(/\/$/, "");
 const instagramUrl = "https://www.instagram.com/watsonstoronto/?hl=en";
 const reservationsUrl =
   "https://www.opentable.ca/booking/restref/availability?rid=1213447&restref=1213447&lang=en-CA";
 
 export function App() {
   const [isContactOpen, setIsContactOpen] = useState(false);
+  const [siteSettings, setSiteSettings] =
+    useState<SiteSettings>(defaultSiteSettings);
   const pathname = window.location.pathname;
+
+  useEffect(() => {
+    applySiteTheme(siteSettings.theme);
+  }, [siteSettings.theme]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadSettings() {
+      try {
+        const response = await fetch(`${apiBaseUrl}/site-settings`, {
+          signal: controller.signal
+        });
+
+        if (response.ok) {
+          setSiteSettings((await response.json()) as SiteSettings);
+        }
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === "AbortError")) {
+          console.warn("Unable to load site settings.", error);
+        }
+      }
+    }
+
+    void loadSettings();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
 
   if (pathname.startsWith("/menu")) {
     return <MenuPage />;
@@ -73,7 +112,11 @@ export function App() {
         <Footer />
       </div>
 
-      <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
+      <ContactModal
+        hours={siteSettings.hours}
+        isOpen={isContactOpen}
+        onClose={() => setIsContactOpen(false)}
+      />
     </div>
   );
 }
@@ -186,11 +229,14 @@ function Footer() {
 }
 
 type ContactModalProps = {
+  hours: SiteSettings["hours"];
   isOpen: boolean;
   onClose: () => void;
 };
 
-function ContactModal({ isOpen, onClose }: ContactModalProps) {
+function ContactModal({ hours, isOpen, onClose }: ContactModalProps) {
+  const groupedHours = groupHours(hours);
+
   return (
     <div
       className={`absolute inset-0 z-50 flex items-center justify-center bg-watsons-dark/80 px-4 backdrop-blur-xl transition duration-500 ${isOpen
@@ -230,13 +276,12 @@ function ContactModal({ isOpen, onClose }: ContactModalProps) {
           </InfoBlock>
           <Divider />
           <InfoBlock heading="Hours">
-            Monday - Saturday
-            <br />
-            5:00 PM - 2:00 AM
-            <br />
-            Sunday
-            <br />
-            7:00 PM - 2:00 AM
+            {groupedHours.map((group) => (
+              <span key={group.label} className="mt-2 block first:mt-0">
+                <span className="block">{group.label}</span>
+                <span className="block">{group.range}</span>
+              </span>
+            ))}
           </InfoBlock>
           <Divider />
           <div>
@@ -280,6 +325,31 @@ function ContactModal({ isOpen, onClose }: ContactModalProps) {
         </a>
       </div>
     </div>
+  );
+}
+
+function groupHours(hours: SiteSettings["hours"]) {
+  return hours.reduce<Array<{ label: string; range: string; key: string }>>(
+    (groups, hour) => {
+      const range = formatHourRange(hour);
+      const key = `${hour.isClosed}:${hour.open}:${hour.close}`;
+      const lastGroup = groups[groups.length - 1];
+
+      if (lastGroup?.key === key) {
+        const firstDay = lastGroup.label.split(" - ")[0];
+        lastGroup.label = `${firstDay} - ${hour.day}`;
+        return groups;
+      }
+
+      groups.push({
+        label: hour.day,
+        range,
+        key
+      });
+
+      return groups;
+    },
+    []
   );
 }
 

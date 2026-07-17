@@ -11,6 +11,7 @@ import { seoByPath } from "../src/seo";
 import { env } from "./env";
 import { adminRoutes } from "./routes/adminRoutes";
 import { menuRoutes } from "./routes/menuRoutes";
+import { siteSettingsRoutes } from "./routes/siteSettingsRoutes";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
@@ -72,6 +73,7 @@ app.use(
 );
 app.use("/api/admin", adminRoutes);
 app.use("/api/menus", menuRoutes);
+app.use("/api/site-settings", siteSettingsRoutes);
 
 let vite: ViteDevServer | undefined;
 
@@ -101,6 +103,16 @@ if (!isProduction) {
 
 app.get("*", async (request, response, next) => {
   try {
+    if (request.path.startsWith("/api/")) {
+      response.status(404).json({ message: "API route not found." });
+      return;
+    }
+
+    if (!isKnownPageRoute(request.path)) {
+      response.redirect(302, "/");
+      return;
+    }
+
     const templatePath = isProduction
       ? path.resolve(root, "dist/client/index.html")
       : path.resolve(root, "index.html");
@@ -126,6 +138,13 @@ app.get("*", async (request, response, next) => {
     next(error);
   }
 });
+
+function isKnownPageRoute(pathname: string) {
+  const normalizedPathname =
+    pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+
+  return ["/", "/menu", "/admin"].includes(normalizedPathname);
+}
 
 app.use((error: unknown, request: express.Request, response: express.Response, next: express.NextFunction) => {
   if (response.headersSent) {

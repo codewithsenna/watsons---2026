@@ -6,19 +6,19 @@ export default {
     extend: {
       colors: {
         watsons: {
-          dark: "#0B0C0B",
-          card: "#151715",
-          cream: "#F4EFE6",
-          green: "#143A2F",
-          gold: "#C89B42",
-          goldHover: "#DFAD49",
-          copper: "#A55F3F",
-          mist: "#9FB7AD"
+          dark: "rgb(var(--watsons-dark) / <alpha-value>)",
+          card: "rgb(var(--watsons-card) / <alpha-value>)",
+          cream: "rgb(var(--watsons-cream) / <alpha-value>)",
+          green: "rgb(var(--watsons-green) / <alpha-value>)",
+          gold: "rgb(var(--watsons-gold) / <alpha-value>)",
+          goldHover: "rgb(var(--watsons-gold-hover) / <alpha-value>)",
+          copper: "rgb(var(--watsons-copper) / <alpha-value>)",
+          mist: "rgb(var(--watsons-mist) / <alpha-value>)"
         }
       },
       fontFamily: {
-        serif: ['"DM Serif Display"', "serif"],
-        sans: ['"DM Sans"', "system-ui", "sans-serif"]
+        serif: ["var(--watsons-font-serif)", "serif"],
+        sans: ["var(--watsons-font-sans)", "system-ui", "sans-serif"]
       },
       boxShadow: {
         glow: "0 0 42px rgba(200, 155, 66, 0.28)"

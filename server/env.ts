@@ -65,7 +65,7 @@ export const env = {
     sessionSecret:
       adminSessionSecret || "development-only-watsons-admin-session-secret",
     sessionMaxAgeSeconds: getNumberEnv("ADMIN_SESSION_MAX_AGE_SECONDS", 28_800),
-    otpExpiresSeconds: getNumberEnv("ADMIN_OTP_EXPIRES_SECONDS", 30),
+    otpExpiresSeconds: getNumberEnv("ADMIN_OTP_EXPIRES_SECONDS", 59),
     otpFrom: getEnv("ADMIN_OTP_FROM", defaultOtpFrom),
     restaurantSlug: getEnv("ADMIN_RESTAURANT_SLUG", "watsons"),
     menuSlug: getEnv("ADMIN_MENU_SLUG", "liquor"),

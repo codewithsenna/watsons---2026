@@ -32,7 +32,7 @@ SMTP_PASS=<Google App Password, not the normal Gmail password>
 
 The `Procfile` runs `npm run migrate:menus` during Heroku release and `npm start` for the web process. The app serves the Vite build from Express in production.
 
-The admin dashboard is available at `/admin`. Admin users cannot register and do not have passwords. The first owner signs in through an email listed in `ADMIN_EMAILS`; after that, admin users, roles, access levels, and active/deleted status are managed in MongoDB. Codes expire after 30 seconds.
+The admin dashboard is available at `/admin`. Admin users cannot register and do not have passwords. The first owner signs in through an email listed in `ADMIN_EMAILS`; after that, admin users, roles, access levels, and active/deleted status are managed in MongoDB. Codes expire after 59 seconds.
 
 For Gmail delivery, turn on 2-Step Verification for the Gmail account, create an App Password, and use that 16-character app password as `SMTP_PASS`.
 

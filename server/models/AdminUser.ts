@@ -1,6 +1,6 @@
 import mongoose, { type InferSchemaType } from "mongoose";
 
-export const adminRoles = ["owner", "manager", "editor", "viewer"] as const;
+export const adminRoles = ["owner", "admin", "manager", "editor", "viewer"] as const;
 
 const adminUserSchema = new mongoose.Schema(
   {

@@ -5,6 +5,8 @@ import { Category } from "../models/Category";
 import { Menu } from "../models/Menu";
 import { MenuItem, type MenuItemDocument } from "../models/MenuItem";
 import { Restaurant } from "../models/Restaurant";
+import { recordAuditLog } from "./adminAuditService";
+import type { SerializedAdminUser } from "./adminUserService";
 import { cleanString, createSlug } from "../utils/menuDataHelpers";
 import { httpError } from "../utils/httpError";
 
@@ -61,7 +63,10 @@ export async function getAdminMenu() {
   };
 }
 
-export async function createAdminCategory(input: CategoryInput) {
+export async function createAdminCategory(
+  input: CategoryInput,
+  actor: SerializedAdminUser
+) {
   const { menu } = await getAdminMenuContext();
   const name = requireText(input.name, "Category name", 80);
   const slug = createSlug(name);
@@ -86,12 +91,25 @@ export async function createAdminCategory(input: CategoryInput) {
     isActive: true
   });
 
-  return serializeAdminCategory(category);
+  const serializedCategory = serializeAdminCategory(category);
+
+  await recordAuditLog({
+    actor,
+    action: "create",
+    resourceType: "category",
+    resourceId: serializedCategory.id,
+    resourceName: serializedCategory.name,
+    before: null,
+    after: serializedCategory
+  });
+
+  return serializedCategory;
 }
 
 export async function updateAdminCategory(
   categoryId: string,
-  input: CategoryInput
+  input: CategoryInput,
+  actor: SerializedAdminUser
 ) {
   const { menu } = await getAdminMenuContext();
   const category = await Category.findOne({
@@ -102,6 +120,8 @@ export async function updateAdminCategory(
   if (!category) {
     throw httpError(404, "Category not found.");
   }
+
+  const beforeCategory = serializeAdminCategory(category);
 
   if ("name" in input) {
     const name = requireText(input.name, "Category name", 80);
@@ -134,10 +154,25 @@ export async function updateAdminCategory(
 
   await category.save();
 
-  return serializeAdminCategory(category);
+  const afterCategory = serializeAdminCategory(category);
+
+  await recordAuditLog({
+    actor,
+    action: "update",
+    resourceType: "category",
+    resourceId: afterCategory.id,
+    resourceName: afterCategory.name,
+    before: beforeCategory,
+    after: afterCategory
+  });
+
+  return afterCategory;
 }
 
-export async function createAdminItem(input: ItemInput) {
+export async function createAdminItem(
+  input: ItemInput,
+  actor: SerializedAdminUser
+) {
   const { restaurant, menu } = await getAdminMenuContext();
   const category = await requireCategoryForMenu(input.categoryId, menu._id);
   const name = requireText(input.name, "Item name", 120);
@@ -159,10 +194,26 @@ export async function createAdminItem(input: ItemInput) {
     sortOrder
   });
 
-  return serializeAdminItem(item);
+  const serializedItem = serializeAdminItem(item);
+
+  await recordAuditLog({
+    actor,
+    action: "create",
+    resourceType: "menuItem",
+    resourceId: serializedItem.id,
+    resourceName: serializedItem.name,
+    before: null,
+    after: serializedItem
+  });
+
+  return serializedItem;
 }
 
-export async function updateAdminItem(itemId: string, input: ItemInput) {
+export async function updateAdminItem(
+  itemId: string,
+  input: ItemInput,
+  actor: SerializedAdminUser
+) {
   const { restaurant, menu } = await getAdminMenuContext();
   const item = await MenuItem.findOne({
     _id: requireObjectId(itemId, "Item"),
@@ -173,6 +224,8 @@ export async function updateAdminItem(itemId: string, input: ItemInput) {
   if (!item) {
     throw httpError(404, "Item not found.");
   }
+
+  const beforeItem = serializeAdminItem(item);
 
   if ("categoryId" in input) {
     const category = await requireCategoryForMenu(input.categoryId, menu._id);
@@ -211,7 +264,19 @@ export async function updateAdminItem(itemId: string, input: ItemInput) {
 
   await item.save();
 
-  return serializeAdminItem(item);
+  const afterItem = serializeAdminItem(item);
+
+  await recordAuditLog({
+    actor,
+    action: "update",
+    resourceType: "menuItem",
+    resourceId: afterItem.id,
+    resourceName: afterItem.name,
+    before: beforeItem,
+    after: afterItem
+  });
+
+  return afterItem;
 }
 
 async function getAdminMenuContext() {

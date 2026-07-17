@@ -1,0 +1,6 @@
+
+> watsons@0.1.0 dev
+> tsx server/index.ts
+
+◇ injected env (17) from .env // tip: ⌘ override existing { override: true }
+Watson's is listening on port 3000.

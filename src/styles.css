@@ -3,16 +3,29 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --watsons-dark: 11 12 11;
+    --watsons-card: 21 23 21;
+    --watsons-cream: 244 239 230;
+    --watsons-green: 20 58 47;
+    --watsons-gold: 200 155 66;
+    --watsons-gold-hover: 223 173 73;
+    --watsons-copper: 165 95 63;
+    --watsons-mist: 159 183 173;
+    --watsons-font-sans: "DM Sans";
+    --watsons-font-serif: "DM Serif Display";
+  }
+
   html {
-    background: #0b0c0b;
+    background: rgb(var(--watsons-dark));
   }
 
   body {
     margin: 0;
     min-width: 320px;
-    background: #0b0c0b;
-    color: #f4efe6;
-    font-family: "DM Sans", system-ui, sans-serif;
+    background: rgb(var(--watsons-dark));
+    color: rgb(var(--watsons-cream));
+    font-family: var(--watsons-font-sans), system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -35,6 +48,25 @@
 
   .animate-rise {
     animation: rise 700ms ease-out both;
+  }
+
+  .admin-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--watsons-gold) / 0.45) transparent;
+  }
+
+  .admin-scroll::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+
+  .admin-scroll::-webkit-scrollbar-thumb {
+    background: rgb(var(--watsons-gold) / 0.35);
+    border-radius: 999px;
+  }
+
+  .admin-scroll::-webkit-scrollbar-track {
+    background: transparent;
   }
 }
 

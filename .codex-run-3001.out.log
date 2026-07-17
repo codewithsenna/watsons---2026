@@ -2,5 +2,13 @@
 > watsons@0.1.0 dev
 > tsx server/index.ts
 
-◇ injected env (5) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (17) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
 Watson's is listening on port 3001.
+[2m3:18:45 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/AdminDashboard.tsx, /src/styles.css[22m
+[2m3:18:45 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/AdminDashboard.tsx, /src/styles.css[22m
+[2m3:19:24 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/AdminDashboard.tsx, /src/styles.css[22m
+[2m3:19:43 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/AdminDashboard.tsx, /src/styles.css[22m
+[2m3:21:27 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/AdminDashboard.tsx, /src/styles.css[22m
+[2m3:25:06 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/AdminDashboard.tsx, /src/styles.css[22m
+[2m3:38:17 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/AdminDashboard.tsx, /src/styles.css[22m
+[2m3:38:32 p.m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/AdminDashboard.tsx, /src/styles.css[22m

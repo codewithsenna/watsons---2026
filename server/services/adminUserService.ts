@@ -6,12 +6,14 @@ import {
   type AdminRole,
   type AdminUserDocument
 } from "../models/AdminUser";
+import { recordAuditLog } from "./adminAuditService";
 import { cleanString } from "../utils/menuDataHelpers";
 import { httpError } from "../utils/httpError";
 
 export type AdminPermissions = {
   canManageMenu: boolean;
   canManageUsers: boolean;
+  canViewAuditTrail: boolean;
 };
 
 export type SerializedAdminUser = {
@@ -34,6 +36,7 @@ type AdminUserInput = {
 
 const roleAccessLevel: Record<AdminRole, number> = {
   owner: 100,
+  admin: 90,
   manager: 70,
   editor: 50,
   viewer: 10
@@ -123,7 +126,19 @@ export async function createAdminUser(
     updatedBy: actor.email
   });
 
-  return serializeAdminUser(user);
+  const serializedUser = serializeAdminUser(user);
+
+  await recordAuditLog({
+    actor,
+    action: "create",
+    resourceType: "adminUser",
+    resourceId: serializedUser.id,
+    resourceName: serializedUser.email,
+    before: null,
+    after: serializedUser
+  });
+
+  return serializedUser;
 }
 
 export async function updateAdminUser(
@@ -141,6 +156,7 @@ export async function updateAdminUser(
   }
 
   assertOwnerChangeAllowed(user, actor);
+  const beforeUser = serializeAdminUser(user);
 
   if ("email" in input) {
     const email = normalizeEmail(input.email);
@@ -183,7 +199,19 @@ export async function updateAdminUser(
   user.updatedBy = actor.email;
   await user.save();
 
-  return serializeAdminUser(user);
+  const afterUser = serializeAdminUser(user);
+
+  await recordAuditLog({
+    actor,
+    action: "update",
+    resourceType: "adminUser",
+    resourceId: afterUser.id,
+    resourceName: afterUser.email,
+    before: beforeUser,
+    after: afterUser
+  });
+
+  return afterUser;
 }
 
 export async function deactivateAdminUser(
@@ -207,11 +235,25 @@ export async function deactivateAdminUser(
     await assertAnotherActiveOwner(user._id);
   }
 
+  const beforeUser = serializeAdminUser(user);
+
   user.isActive = false;
   user.updatedBy = actor.email;
   await user.save();
 
-  return serializeAdminUser(user);
+  const afterUser = serializeAdminUser(user);
+
+  await recordAuditLog({
+    actor,
+    action: "deactivate",
+    resourceType: "adminUser",
+    resourceId: afterUser.id,
+    resourceName: afterUser.email,
+    before: beforeUser,
+    after: afterUser
+  });
+
+  return afterUser;
 }
 
 export function serializeAdminUser(
@@ -239,7 +281,8 @@ export function getPermissions(
 ): AdminPermissions {
   return {
     canManageMenu: accessLevel >= 50 && role !== "viewer",
-    canManageUsers: role === "owner" && accessLevel >= 90
+    canManageUsers: ["owner", "admin"].includes(role) && accessLevel >= 90,
+    canViewAuditTrail: ["owner", "admin"].includes(role) && accessLevel >= 90
   };
 }
 
