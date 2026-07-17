@@ -1,5 +1,6 @@
 import { Mail, MapPin, X, Instagram, Phone } from "lucide-react";
 import { useState } from "react";
+import { AdminDashboard } from "./AdminDashboard";
 import { MenuPage } from "./MenuPage";
 
 const backgroundImage = "/hero-bg.jpg";
@@ -13,6 +14,10 @@ export function App() {
 
   if (pathname.startsWith("/menu")) {
     return <MenuPage />;
+  }
+
+  if (pathname.startsWith("/admin")) {
+    return <AdminDashboard />;
   }
 
   return (

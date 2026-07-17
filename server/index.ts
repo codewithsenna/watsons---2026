@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import type { ViteDevServer } from "vite";
 import { seoByPath } from "../src/seo";
 import { env } from "./env";
+import { adminRoutes } from "./routes/adminRoutes";
 import { menuRoutes } from "./routes/menuRoutes";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -58,6 +59,7 @@ app.use(
   })
 );
 app.use(compression());
+app.use(express.json({ limit: "32kb" }));
 
 app.use(
   "/api",
@@ -68,6 +70,7 @@ app.use(
     legacyHeaders: false
   })
 );
+app.use("/api/admin", adminRoutes);
 app.use("/api/menus", menuRoutes);
 
 let vite: ViteDevServer | undefined;
@@ -171,6 +174,9 @@ function renderSeoHead(pathname: string, requestOrigin: string, cspNonce: string
     image: ogImage,
     logo: logoImage
   }).replace(/</g, "\\u003c");
+  const robots = pathname.startsWith("/admin")
+    ? "noindex, nofollow"
+    : "index, follow";
   const favicon16 = "/icons/favicon-16.png";
   const favicon32 = "/icons/favicon-32.png";
   const appleTouchIcon = "/apple-touch-icon.png";
@@ -189,7 +195,7 @@ function renderSeoHead(pathname: string, requestOrigin: string, cspNonce: string
     '<meta name="apple-mobile-web-app-capable" content="yes" />',
     '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />',
     '<meta name="mobile-web-app-capable" content="yes" />',
-    '<meta name="robots" content="index, follow" />',
+    `<meta name="robots" content="${robots}" />`,
     '<meta name="theme-color" content="#0B0C0B" />',
     '<meta property="og:type" content="website" />',
     `<meta property="og:title" content="${escapeHtml(seo.title)}" />`,
