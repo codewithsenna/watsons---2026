@@ -520,7 +520,9 @@ function AdminWorkspace({
   user: AdminUser;
   onSignedOut: () => void;
 }) {
-  const [activePanel, setActivePanel] = useState<PanelId>("overview");
+  const [activePanel, setActivePanel] = useState<PanelId>(() =>
+    getInitialAdminPanel(user)
+  );
   const [menuData, setMenuData] = useState<AdminMenuResponse | null>(null);
   const [settings, setSettings] = useState<SiteSettings>(defaultSiteSettings);
   const [usersData, setUsersData] = useState<AdminUserRecord[]>([]);
@@ -550,6 +552,24 @@ function AdminWorkspace({
   useEffect(() => {
     void loadWorkspace();
   }, []);
+
+  useEffect(() => {
+    const allowedPanels = new Set(getPanelItems(user).map((item) => item.id));
+
+    if (!allowedPanels.has(activePanel)) {
+      setAdminPanel("overview", { replace: true });
+    }
+  }, [activePanel, user]);
+
+  useEffect(() => {
+    function handlePopState() {
+      setActivePanel(getPanelFromUrl(user));
+    }
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [user]);
 
   useEffect(() => {
     applySiteTheme(settings.theme);
@@ -617,6 +637,14 @@ function AdminWorkspace({
 
   const activeDraft = editorMode === "edit" ? itemDraft : newItemDraft;
   const panelItems = getPanelItems(user);
+
+  function setAdminPanel(panel: PanelId, { replace = false } = {}) {
+    const allowedPanels = new Set(panelItems.map((item) => item.id));
+    const nextPanel = allowedPanels.has(panel) ? panel : "overview";
+
+    setActivePanel(nextPanel);
+    updateAdminPanelUrl(nextPanel, replace);
+  }
 
   async function loadWorkspace() {
     setIsLoading(true);
@@ -1052,7 +1080,7 @@ function AdminWorkspace({
             <button
               key={item.id}
               type="button"
-              onClick={() => setActivePanel(item.id)}
+              onClick={() => setAdminPanel(item.id)}
               className={`flex min-w-max items-center gap-3 rounded-md border px-3 py-3 text-left text-sm font-bold transition lg:min-w-0 ${
                 activePanel === item.id
                   ? "border-watsons-gold bg-watsons-gold text-watsons-dark"
@@ -1090,7 +1118,7 @@ function AdminWorkspace({
               menuData={menuData}
               settings={settings}
               userCount={usersData.length}
-              onNavigate={setActivePanel}
+              onNavigate={setAdminPanel}
               canManageUsers={user.permissions.canManageUsers}
             />
           ) : null}
@@ -2964,6 +2992,60 @@ function getPanelItems(user: AdminUser) {
       ? [{ id: "audit" as const, label: "Audit", icon: History }]
       : [])
   ];
+}
+
+function getInitialAdminPanel(user: AdminUser): PanelId {
+  return getPanelFromUrl(user);
+}
+
+function getPanelFromUrl(user: AdminUser): PanelId {
+  if (typeof window === "undefined") {
+    return "overview";
+  }
+
+  const panel = new URLSearchParams(window.location.search).get("panel");
+  const allowedPanels = new Set(getPanelItems(user).map((item) => item.id));
+
+  return isPanelId(panel) && allowedPanels.has(panel) ? panel : "overview";
+}
+
+function updateAdminPanelUrl(panel: PanelId, replace: boolean) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const url = new URL(window.location.href);
+
+  if (panel === "overview") {
+    url.searchParams.delete("panel");
+  } else {
+    url.searchParams.set("panel", panel);
+  }
+
+  const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+  const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+  if (nextUrl === currentUrl) {
+    return;
+  }
+
+  if (replace) {
+    window.history.replaceState(null, "", nextUrl);
+    return;
+  }
+
+  window.history.pushState(null, "", nextUrl);
+}
+
+function isPanelId(value: unknown): value is PanelId {
+  return (
+    value === "overview" ||
+    value === "menu" ||
+    value === "design" ||
+    value === "hours" ||
+    value === "users" ||
+    value === "audit"
+  );
 }
 
 function createEmptyItemDraft(categoryId: string): ItemDraft {
