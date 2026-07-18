@@ -2208,54 +2208,7 @@ function AuditPanel({
       <div className="grid gap-3">
         {logs.length ? (
           logs.map((log) => (
-            <article
-              key={log.id}
-              className="rounded-lg border border-watsons-gold/15 bg-watsons-card/70 p-4"
-            >
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-watsons-gold">
-                    {formatAuditAction(log.action)} {log.resourceType}
-                  </p>
-                  <h2 className="mt-1 font-serif text-2xl text-watsons-cream">
-                    {log.resourceName || log.resourceId || "Record"}
-                  </h2>
-                  <p className="mt-2 text-sm text-watsons-mist">
-                    {log.actorName || log.actorEmail} ({log.actorRole}) -{" "}
-                    {formatAuditDate(log.createdAt)}
-                  </p>
-                </div>
-                <span className="w-fit rounded-full border border-watsons-cream/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-watsons-mist">
-                  {log.actorEmail}
-                </span>
-              </div>
-
-              <div className="mt-4 grid gap-2">
-                {log.changes.length ? (
-                  log.changes.map((change) => (
-                    <div
-                      key={`${log.id}-${change.field}`}
-                      className="grid gap-2 rounded-md border border-watsons-cream/10 bg-watsons-dark/45 p-3 lg:grid-cols-[180px_1fr_1fr]"
-                    >
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-watsons-mist">
-                          Field
-                        </p>
-                        <p className="mt-1 break-words text-sm font-bold text-watsons-cream">
-                          {change.field}
-                        </p>
-                      </div>
-                      <AuditValue label="Before" value={change.before} />
-                      <AuditValue label="After" value={change.after} />
-                    </div>
-                  ))
-                ) : (
-                  <p className="rounded-md border border-watsons-cream/10 bg-watsons-dark/45 p-3 text-sm text-watsons-mist">
-                    No field values changed.
-                  </p>
-                )}
-              </div>
-            </article>
+            <AuditEntry key={log.id} log={log} />
           ))
         ) : isLoading ? (
           <div className="rounded-lg border border-watsons-gold/15 bg-watsons-card/70 p-5">
@@ -2291,6 +2244,148 @@ function AuditPanel({
         ) : null}
       </div>
     </PanelShell>
+  );
+}
+
+function AuditEntry({ log }: { log: AdminAuditLog }) {
+  const changes = getAuditDisplayChanges(log);
+  const isSignIn = log.action === "signIn";
+  const showActorBadge =
+    !isSignIn || log.resourceName.toLowerCase() !== log.actorEmail.toLowerCase();
+
+  return (
+    <article className="rounded-lg border border-watsons-gold/15 bg-watsons-card/70 p-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-watsons-gold">
+            {formatAuditEntryLabel(log)}
+          </p>
+          <h2 className="mt-1 font-serif text-2xl text-watsons-cream">
+            {log.resourceName || log.resourceId || "Record"}
+          </h2>
+          <p className="mt-2 text-sm text-watsons-mist">
+            {log.actorName || log.actorEmail} ({formatAuditRole(log.actorRole)}) -{" "}
+            {formatAuditDate(log.createdAt)}
+          </p>
+        </div>
+        {showActorBadge ? (
+          <span className="w-fit rounded-full border border-watsons-cream/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-watsons-mist">
+            {log.actorEmail}
+          </span>
+        ) : null}
+      </div>
+
+      <AuditEntryDetails log={log} changes={changes} />
+    </article>
+  );
+}
+
+function AuditEntryDetails({
+  log,
+  changes
+}: {
+  log: AdminAuditLog;
+  changes: AdminAuditChange[];
+}) {
+  if (log.action === "signIn") {
+    return (
+      <p className="mt-4 rounded-md border border-watsons-cream/10 bg-watsons-dark/45 p-3 text-sm leading-6 text-watsons-mist">
+        Signed in as <span className="font-bold text-watsons-cream">{formatAuditRole(log.actorRole)}</span>.
+      </p>
+    );
+  }
+
+  if (log.action === "create") {
+    return (
+      <AuditDetailGrid
+        emptyLabel="Record created."
+        label="Created Details"
+        changes={changes}
+        valueKey="after"
+      />
+    );
+  }
+
+  if (log.action === "delete" || log.action === "deactivate") {
+    return (
+      <AuditDetailGrid
+        emptyLabel="Record deleted."
+        label="Deleted Details"
+        changes={changes}
+        valueKey="before"
+      />
+    );
+  }
+
+  return (
+    <div className="mt-4 grid gap-2">
+      {changes.length ? (
+        changes.map((change) => (
+          <div
+            key={`${log.id}-${change.field}`}
+            className="grid gap-2 rounded-md border border-watsons-cream/10 bg-watsons-dark/45 p-3 lg:grid-cols-[180px_1fr_1fr]"
+          >
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-watsons-mist">
+                Field
+              </p>
+              <p className="mt-1 break-words text-sm font-bold text-watsons-cream">
+                {formatAuditField(change.field)}
+              </p>
+            </div>
+            <AuditValue label="Before" value={change.before} />
+            <AuditValue label="After" value={change.after} />
+          </div>
+        ))
+      ) : (
+        <p className="rounded-md border border-watsons-cream/10 bg-watsons-dark/45 p-3 text-sm text-watsons-mist">
+          No field values changed.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function AuditDetailGrid({
+  label,
+  emptyLabel,
+  changes,
+  valueKey
+}: {
+  label: string;
+  emptyLabel: string;
+  changes: AdminAuditChange[];
+  valueKey: "before" | "after";
+}) {
+  const details = changes.filter((change) => !isAuditValueEmpty(change[valueKey]));
+
+  if (!details.length) {
+    return (
+      <p className="mt-4 rounded-md border border-watsons-cream/10 bg-watsons-dark/45 p-3 text-sm text-watsons-mist">
+        {emptyLabel}
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+      {details.map((change) => (
+        <div
+          key={`${change.field}-${valueKey}`}
+          className="rounded-md border border-watsons-cream/10 bg-watsons-dark/45 p-3"
+        >
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-watsons-mist">
+            {label}
+          </p>
+          <p className="mt-1 text-sm font-bold text-watsons-gold">
+            {formatAuditField(change.field)}
+          </p>
+          <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-watsons-cream">
+            {formatAuditValue(change[valueKey])}
+          </p>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -2946,8 +3041,79 @@ function formatAmount(amount: number) {
   return Number.isInteger(amount) ? amount.toString() : amount.toFixed(2);
 }
 
+const auditInternalFields = new Set([
+  "id",
+  "menuId",
+  "restaurantId",
+  "categoryId",
+  "slug",
+  "sortOrder",
+  "accessLevel",
+  "permissions"
+]);
+
+function getAuditDisplayChanges(log: AdminAuditLog) {
+  return log.changes.filter((change) => {
+    if (areAuditValuesEqual(change.before, change.after)) {
+      return false;
+    }
+
+    if (isAuditValueEmpty(change.before) && isAuditValueEmpty(change.after)) {
+      return false;
+    }
+
+    if (
+      (log.action === "create" || log.action === "delete") &&
+      auditInternalFields.has(change.field.split(".")[0])
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function formatAuditEntryLabel(log: AdminAuditLog) {
+  if (log.action === "signIn") {
+    return "Sign In";
+  }
+
+  return `${formatAuditAction(log.action)} ${formatAuditResourceType(log.resourceType)}`;
+}
+
 function formatAuditAction(action: string) {
-  return action.charAt(0).toUpperCase() + action.slice(1);
+  const labels: Record<string, string> = {
+    create: "Create",
+    update: "Update",
+    delete: "Delete",
+    deactivate: "Delete",
+    signIn: "Sign In"
+  };
+
+  return labels[action] ?? formatAuditField(action);
+}
+
+function formatAuditResourceType(resourceType: string) {
+  const labels: Record<string, string> = {
+    adminSession: "Admin Session",
+    adminUser: "Admin User",
+    category: "Category",
+    menuItem: "Menu Item",
+    siteSettings: "Site Settings"
+  };
+
+  return labels[resourceType] ?? formatAuditField(resourceType);
+}
+
+function formatAuditRole(role: string) {
+  return formatAuditField(role);
+}
+
+function formatAuditField(field: string) {
+  return field
+    .replace(/\./g, " ")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function formatAuditDate(value: string) {
@@ -2970,7 +3136,48 @@ function formatAuditValue(value: unknown) {
     return String(value);
   }
 
+  if (Array.isArray(value) && isPricingAuditValue(value)) {
+    return value
+      .map((price) => {
+        const label = typeof price.label === "string" ? price.label : "Regular";
+        const amount = typeof price.amount === "number" ? price.amount : 0;
+
+        return `${label}: $${formatAmount(amount)}`;
+      })
+      .join("\n");
+  }
+
   return JSON.stringify(value, null, 2);
+}
+
+function isAuditValueEmpty(value: unknown) {
+  if (value === null || value === undefined || value === "") {
+    return true;
+  }
+
+  if (Array.isArray(value)) {
+    return value.length === 0;
+  }
+
+  if (typeof value === "object") {
+    return Object.keys(value).length === 0;
+  }
+
+  return false;
+}
+
+function areAuditValuesEqual(before: unknown, after: unknown) {
+  return JSON.stringify(before ?? null) === JSON.stringify(after ?? null);
+}
+
+function isPricingAuditValue(value: unknown[]): value is AdminPricing[] {
+  return value.every(
+    (entry) =>
+      entry !== null &&
+      typeof entry === "object" &&
+      "amount" in entry &&
+      "label" in entry
+  );
 }
 
 async function adminFetch<T = unknown>(

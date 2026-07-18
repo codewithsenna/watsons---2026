@@ -57,14 +57,15 @@ export async function recordAuditLog(input: AuditInput) {
 
   const before = normalizeSnapshot(input.before ?? null);
   const after = normalizeSnapshot(input.after ?? null);
-  const changes = buildChanges(before, after);
+  const action = cleanString(input.action);
+  const changes = action === "signIn" ? [] : buildChanges(before, after);
 
   await AdminAuditLog.create({
     actorId: input.actor.id,
     actorEmail: input.actor.email,
     actorName: input.actor.name,
     actorRole: input.actor.role,
-    action: cleanString(input.action),
+    action,
     resourceType: cleanString(input.resourceType),
     resourceId: cleanString(input.resourceId),
     resourceName: cleanString(input.resourceName),
