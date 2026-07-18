@@ -14,6 +14,7 @@ import {
   recordAuditLog
 } from "../services/adminAuditService";
 import {
+  bulkIncreaseAdminPrices,
   createAdminCategory,
   createAdminItem,
   deleteAdminCategory,
@@ -23,6 +24,7 @@ import {
   updateAdminItem
 } from "../services/adminMenuService";
 import {
+  assertCanBulkAdjustPrices,
   assertCanManageMenu,
   assertCanManageUsers,
   createAdminUser,
@@ -252,6 +254,17 @@ adminRoutes.post("/items", async (request: AdminRequest, response, next) => {
 
     assertCanManageMenu(user);
     response.status(201).json(await createAdminItem(request.body ?? {}, user));
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRoutes.post("/items/bulk-price-increase", async (request: AdminRequest, response, next) => {
+  try {
+    const user = requireRequestUser(request);
+
+    assertCanBulkAdjustPrices(user);
+    response.json(await bulkIncreaseAdminPrices(request.body ?? {}, user));
   } catch (error) {
     next(error);
   }

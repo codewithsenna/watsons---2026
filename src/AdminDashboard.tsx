@@ -11,6 +11,7 @@ import {
   LogOut,
   Mail,
   Palette,
+  Percent,
   Plus,
   RefreshCw,
   Save,
@@ -48,6 +49,7 @@ type AdminPermissions = {
   canManageUsers: boolean;
   canViewAuditTrail: boolean;
   canViewAllAuditTrail: boolean;
+  canBulkAdjustPrices: boolean;
 };
 
 type AdminUser = {
@@ -100,6 +102,13 @@ type AdminMenuResponse = {
     slug: string;
   };
   categories: AdminCategory[];
+  items: AdminItem[];
+};
+
+type BulkPriceIncreaseResponse = {
+  percentage: number;
+  itemCount: number;
+  priceCount: number;
   items: AdminItem[];
 };
 
@@ -1030,6 +1039,50 @@ function AdminWorkspace({
     }
   }
 
+  async function bulkIncreasePrices(percentage: number) {
+    if (
+      !window.confirm(
+        `Increase every menu price by ${percentage}%? This updates all menu items.`
+      )
+    ) {
+      return false;
+    }
+
+    setIsSaving(true);
+    setError("");
+    setStatus("");
+
+    try {
+      const result = await adminFetch<BulkPriceIncreaseResponse>(
+        "/admin/items/bulk-price-increase",
+        {
+          method: "POST",
+          body: JSON.stringify({ percentage })
+        }
+      );
+      const updatedItems = new Map(result.items.map((item) => [item.id, item]));
+
+      setMenuData((current) =>
+        current
+          ? {
+              ...current,
+              items: current.items.map((item) => updatedItems.get(item.id) ?? item)
+            }
+          : current
+      );
+      setStatus(
+        `Increased ${result.priceCount} prices across ${result.itemCount} items by ${result.percentage}%.`
+      );
+      await refreshAuditLogs();
+      return true;
+    } catch (caughtError) {
+      setError(getErrorMessage(caughtError));
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   async function saveSettings(nextSettings = settings) {
     setIsSaving(true);
     setError("");
@@ -1135,6 +1188,7 @@ function AdminWorkspace({
               editorMode={editorMode}
               draft={activeDraft}
               isSaving={isSaving}
+              canBulkAdjustPrices={user.permissions.canBulkAdjustPrices}
               newCategoryName={newCategoryName}
               newCategoryDescription={newCategoryDescription}
               categoryDraft={categoryDraft}
@@ -1171,6 +1225,7 @@ function AdminWorkspace({
               }}
               onItemSubmit={saveItem}
               onItemDelete={deleteItem}
+              onBulkPriceIncrease={bulkIncreasePrices}
             />
           ) : null}
 
@@ -1290,6 +1345,7 @@ function MenuPanel({
   editorMode,
   draft,
   isSaving,
+  canBulkAdjustPrices,
   newCategoryName,
   newCategoryDescription,
   categoryDraft,
@@ -1306,7 +1362,8 @@ function MenuPanel({
   onCategoryDraftChange,
   onDraftChange,
   onItemSubmit,
-  onItemDelete
+  onItemDelete,
+  onBulkPriceIncrease
 }: {
   categories: AdminCategory[];
   filteredItems: AdminItem[];
@@ -1318,6 +1375,7 @@ function MenuPanel({
   editorMode: "edit" | "new";
   draft: ItemDraft | null;
   isSaving: boolean;
+  canBulkAdjustPrices: boolean;
   newCategoryName: string;
   newCategoryDescription: string;
   categoryDraft: CategoryDraft | null;
@@ -1335,9 +1393,11 @@ function MenuPanel({
   onDraftChange: (draft: ItemDraft) => void;
   onItemSubmit: (event: FormEvent<HTMLFormElement>) => Promise<boolean>;
   onItemDelete: () => Promise<boolean>;
+  onBulkPriceIncrease: (percentage: number) => Promise<boolean>;
 }) {
   const [draggingCategoryId, setDraggingCategoryId] = useState("");
   const [isMobileItemEditorOpen, setIsMobileItemEditorOpen] = useState(false);
+  const [bulkPricePercent, setBulkPricePercent] = useState("");
   const selectedCategoryItemCount = selectedCategoryId
     ? itemCountsByCategory.get(selectedCategoryId) ?? 0
     : 0;
@@ -1383,6 +1443,22 @@ function MenuPanel({
     }
   }
 
+  async function handleBulkPriceIncrease(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const percentage = Number(bulkPricePercent);
+
+    if (!Number.isFinite(percentage) || percentage <= 0) {
+      return;
+    }
+
+    const didSave = await onBulkPriceIncrease(percentage);
+
+    if (didSave) {
+      setBulkPricePercent("");
+    }
+  }
+
   return (
     <div className="space-y-4">
       <PanelHeader
@@ -1399,6 +1475,50 @@ function MenuPanel({
           </button>
         }
       />
+
+      {canBulkAdjustPrices ? (
+        <form
+          onSubmit={handleBulkPriceIncrease}
+          className="grid gap-3 rounded-lg border border-watsons-gold/15 bg-watsons-card/70 p-4 lg:grid-cols-[minmax(0,1fr)_220px_180px]"
+        >
+          <div>
+            <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-watsons-gold">
+              <Percent className="h-4 w-4" aria-hidden="true" />
+              Bulk Price Increase
+            </p>
+            <p className="mt-2 text-sm leading-6 text-watsons-mist">
+              Owner/admin only. Increase every menu item price by the same percentage.
+            </p>
+          </div>
+          <label className="block">
+            <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-watsons-mist">
+              Increase By
+            </span>
+            <span className="flex h-11 items-center rounded-md border border-watsons-cream/10 bg-watsons-dark px-3 focus-within:border-watsons-gold/70">
+              <input
+                value={bulkPricePercent}
+                onChange={(event) => setBulkPricePercent(event.target.value)}
+                type="number"
+                min="0.01"
+                max="100"
+                step="0.01"
+                className="min-w-0 flex-1 bg-transparent text-sm font-bold text-watsons-cream outline-none"
+                placeholder="10"
+                required
+              />
+              <span className="text-sm font-bold text-watsons-gold">%</span>
+            </span>
+          </label>
+          <button
+            type="submit"
+            disabled={isSaving || !bulkPricePercent}
+            className="mt-auto flex h-11 items-center justify-center gap-2 rounded-md bg-watsons-gold px-4 text-xs font-bold uppercase tracking-[0.16em] text-watsons-dark transition hover:bg-watsons-goldHover disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            <Percent className="h-4 w-4" aria-hidden="true" />
+            Apply Increase
+          </button>
+        </form>
+      ) : null}
 
       <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)_440px]">
         <section className="admin-scroll rounded-lg border border-watsons-gold/15 bg-watsons-card/70 p-4 xl:max-h-[calc(100dvh-8rem)] xl:overflow-y-auto">
@@ -2345,6 +2465,17 @@ function AuditEntryDetails({
     );
   }
 
+  if (log.action === "bulkPriceIncrease") {
+    return (
+      <AuditDetailGrid
+        emptyLabel="Menu prices increased."
+        label="Adjustment Details"
+        changes={changes}
+        valueKey="after"
+      />
+    );
+  }
+
   return (
     <div className="mt-4 grid gap-2">
       {changes.length ? (
@@ -3169,6 +3300,7 @@ function formatAuditAction(action: string) {
     update: "Update",
     delete: "Delete",
     deactivate: "Delete",
+    bulkPriceIncrease: "Bulk Price Increase",
     signIn: "Sign In"
   };
 
@@ -3181,6 +3313,7 @@ function formatAuditResourceType(resourceType: string) {
     adminUser: "Admin User",
     category: "Category",
     menuItem: "Menu Item",
+    menuPrices: "Menu Prices",
     siteSettings: "Site Settings"
   };
 

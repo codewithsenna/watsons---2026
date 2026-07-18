@@ -15,6 +15,7 @@ export type AdminPermissions = {
   canManageUsers: boolean;
   canViewAuditTrail: boolean;
   canViewAllAuditTrail: boolean;
+  canBulkAdjustPrices: boolean;
 };
 
 export type SerializedAdminUser = {
@@ -287,7 +288,8 @@ export function getPermissions(
     canManageMenu: accessLevel >= 50 && role !== "viewer",
     canManageUsers: ["owner", "admin"].includes(role) && accessLevel >= 90,
     canViewAuditTrail: true,
-    canViewAllAuditTrail
+    canViewAllAuditTrail,
+    canBulkAdjustPrices: ["owner", "admin"].includes(role) && accessLevel >= 90
   };
 }
 
@@ -300,6 +302,12 @@ export function assertCanManageMenu(user: SerializedAdminUser) {
 export function assertCanManageUsers(user: SerializedAdminUser) {
   if (!user.permissions.canManageUsers) {
     throw httpError(403, "You do not have access to manage users.");
+  }
+}
+
+export function assertCanBulkAdjustPrices(user: SerializedAdminUser) {
+  if (!user.permissions.canBulkAdjustPrices) {
+    throw httpError(403, "Only owners and admins can bulk-adjust prices.");
   }
 }
 

@@ -16,6 +16,12 @@ type PricingInput = {
   currency?: unknown;
 };
 
+type ExistingPricing = {
+  label: string;
+  amount: number;
+  currency: string;
+};
+
 type CategoryInput = {
   name?: unknown;
   description?: unknown;
@@ -32,6 +38,10 @@ type ItemInput = {
   isAvailable?: unknown;
   isFeatured?: unknown;
   sortOrder?: unknown;
+};
+
+type BulkPriceInput = {
+  percentage?: unknown;
 };
 
 export async function getAdminMenu() {
@@ -351,6 +361,93 @@ export async function deleteAdminItem(
   return beforeItem;
 }
 
+export async function bulkIncreaseAdminPrices(
+  input: BulkPriceInput,
+  actor: SerializedAdminUser
+) {
+  const { restaurant, menu } = await getAdminMenuContext();
+  const percentage = normalizeIncreasePercentage(input.percentage);
+  const multiplier = 1 + percentage / 100;
+  const items = await MenuItem.find({
+    restaurantId: restaurant._id,
+    menuId: menu._id
+  });
+  const changedItems: Array<ReturnType<typeof serializeAdminItem>> = [];
+  const examples: Array<{
+    item: string;
+    label: string;
+    before: number;
+    after: number;
+  }> = [];
+  let priceCount = 0;
+
+  for (const item of items) {
+    let didChange = false;
+
+    item.pricing = item.pricing.map((price: ExistingPricing) => {
+      const beforeAmount = Number(price.amount);
+      const afterAmount = roundMoney(beforeAmount * multiplier);
+
+      if (!Number.isFinite(beforeAmount) || beforeAmount < 0) {
+        return price;
+      }
+
+      priceCount += 1;
+
+      if (afterAmount !== beforeAmount) {
+        didChange = true;
+      }
+
+      if (examples.length < 12) {
+        examples.push({
+          item: item.name,
+          label: price.label,
+          before: beforeAmount,
+          after: afterAmount
+        });
+      }
+
+      return {
+        label: price.label,
+        amount: afterAmount,
+        currency: price.currency
+      };
+    });
+
+    if (didChange) {
+      await item.save();
+      changedItems.push(serializeAdminItem(item));
+    }
+  }
+
+  await recordAuditLog({
+    actor,
+    action: "bulkPriceIncrease",
+    resourceType: "menuPrices",
+    resourceId: menu._id.toString(),
+    resourceName: menu.title,
+    before: {
+      itemCount: changedItems.length,
+      priceCount,
+      note: "Prices before percentage increase"
+    },
+    after: {
+      percentage,
+      itemCount: changedItems.length,
+      priceCount,
+      roundedTo: "nearest cent",
+      examples
+    }
+  });
+
+  return {
+    percentage,
+    itemCount: changedItems.length,
+    priceCount,
+    items: changedItems
+  };
+}
+
 async function getAdminMenuContext() {
   await connectMongoose();
 
@@ -512,6 +609,29 @@ function normalizePricing(value: unknown) {
       currency
     };
   });
+}
+
+function normalizeIncreasePercentage(value: unknown) {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value)
+        : Number.NaN;
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw httpError(400, "Enter a percentage greater than 0.");
+  }
+
+  if (parsed > 100) {
+    throw httpError(400, "Percentage cannot be more than 100.");
+  }
+
+  return Math.round(parsed * 100) / 100;
+}
+
+function roundMoney(value: number) {
+  return Math.round(value * 100) / 100;
 }
 
 function requireObjectId(value: string, label: string) {
