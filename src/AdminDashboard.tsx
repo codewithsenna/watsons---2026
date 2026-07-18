@@ -1482,20 +1482,20 @@ function MenuPanel({
       {canBulkAdjustPrices ? (
         <form
           onSubmit={handleBulkPriceIncrease}
-          className="grid gap-3 rounded-lg border border-watsons-gold/15 bg-watsons-card/70 p-4 lg:grid-cols-[minmax(0,1fr)_220px_180px]"
+          className="grid gap-3 rounded-lg border border-watsons-gold/45 bg-watsons-gold/10 p-4 shadow-lg shadow-black/20 lg:grid-cols-[minmax(0,1fr)_220px_210px]"
         >
           <div>
             <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-watsons-gold">
               <Percent className="h-4 w-4" aria-hidden="true" />
-              Bulk Price Increase
+              Bulk Update Prices
             </p>
             <p className="mt-2 text-sm leading-6 text-watsons-mist">
-              Owner/admin only. Increase every menu item price by the same percentage.
+              Owner/admin only. Increase all menu item prices by one percentage.
             </p>
           </div>
           <label className="block">
             <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.22em] text-watsons-mist">
-              Increase By
+              Percentage Increase
             </span>
             <span className="flex h-11 items-center rounded-md border border-watsons-cream/10 bg-watsons-dark px-3 focus-within:border-watsons-gold/70">
               <input
@@ -1518,7 +1518,7 @@ function MenuPanel({
             className="mt-auto flex h-11 items-center justify-center gap-2 rounded-md bg-watsons-gold px-4 text-xs font-bold uppercase tracking-[0.16em] text-watsons-dark transition hover:bg-watsons-goldHover disabled:cursor-not-allowed disabled:opacity-45"
           >
             <Percent className="h-4 w-4" aria-hidden="true" />
-            Apply Increase
+            Update All Prices
           </button>
         </form>
       ) : null}
