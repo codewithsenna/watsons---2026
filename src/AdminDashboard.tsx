@@ -646,6 +646,9 @@ function AdminWorkspace({
 
   const activeDraft = editorMode === "edit" ? itemDraft : newItemDraft;
   const panelItems = getPanelItems(user);
+  const canBulkAdjustPrices =
+    user.permissions.canBulkAdjustPrices ||
+    (["owner", "admin"].includes(user.role) && user.accessLevel >= 90);
 
   function setAdminPanel(panel: PanelId, { replace = false } = {}) {
     const allowedPanels = new Set(panelItems.map((item) => item.id));
@@ -1188,7 +1191,7 @@ function AdminWorkspace({
               editorMode={editorMode}
               draft={activeDraft}
               isSaving={isSaving}
-              canBulkAdjustPrices={user.permissions.canBulkAdjustPrices}
+              canBulkAdjustPrices={canBulkAdjustPrices}
               newCategoryName={newCategoryName}
               newCategoryDescription={newCategoryDescription}
               categoryDraft={categoryDraft}
